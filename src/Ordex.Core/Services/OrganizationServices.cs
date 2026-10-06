@@ -290,8 +290,8 @@ public sealed class UserService(
     ICurrentUser user,
     IClock clock) : IUserService
 {
-    public Task<IReadOnlyList<UserListItem>> GetListAsync(string? search) =>
-        users.GetListAsync(new TenantScope(user.Scope.CompanyId, 0), search);
+    public Task<PagedResult<UserListItem>> GetPagedAsync(UserFilter filter) =>
+        users.GetPagedAsync(new TenantScope(user.Scope.CompanyId, 0), filter);
 
     public async Task<UserInput?> GetForEditAsync(int id)
     {

@@ -137,7 +137,7 @@ public sealed class UserRepository(DbSession session) : RepositoryBase(session),
 {
     private const string Columns = """
         Id, CompanyId, BusinessUnitId, FullName, UserName, Email, Phone, PasswordHash, Role,
-        AccessFailedCount, LockoutEnd, LastLoginAt, IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt
+        AccessFailedCount, LockoutEnd, LastLoginAt, Theme, ColorMode, IsActive, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt
         """;
 
     public Task<AppUser?> GetByUserNameAsync(string userName) =>
@@ -147,21 +147,25 @@ public sealed class UserRepository(DbSession session) : RepositoryBase(session),
     public Task<AppUser?> GetByIdAsync(int id) =>
         QuerySingleOrDefaultAsync<AppUser>($"SELECT {Columns} FROM dbo.AppUser WHERE Id = @Id;", new { Id = id });
 
-    public Task<IReadOnlyList<UserListItem>> GetListAsync(TenantScope scope, string? search)
+    public Task<PagedResult<UserListItem>> GetPagedAsync(TenantScope scope, UserFilter filter)
     {
         var p = ScopeParameters(scope);
-        p.Add("Search", string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%");
+        p.Add("Search", filter.SearchPattern);
 
-        return QueryAsync<UserListItem>($"""
-            SELECT u.Id, u.FullName, u.UserName, u.Email, u.Phone, u.Role, u.CompanyId, u.BusinessUnitId,
-                   c.CompanyName, bu.UnitName AS BusinessUnitName, u.IsActive, u.LastLoginAt
+        return QueryPagedAsync<UserListItem>(
+            """
+            u.Id, u.FullName, u.UserName, u.Email, u.Phone, u.Role, u.CompanyId, u.BusinessUnitId,
+            c.CompanyName, bu.UnitName AS BusinessUnitName, u.IsActive, u.LastLoginAt
+            """,
+            $"""
             FROM dbo.AppUser u
             LEFT JOIN dbo.Company c       ON c.Id  = u.CompanyId
             LEFT JOIN dbo.BusinessUnit bu ON bu.Id = u.BusinessUnitId
             WHERE {ScopeFilter("u")}
               AND (@Search IS NULL OR u.FullName LIKE @Search OR u.UserName LIKE @Search OR u.Phone LIKE @Search)
-            ORDER BY u.Role, u.FullName;
-            """, p);
+            """,
+            "u.Role, u.FullName, u.Id",
+            p, filter);
     }
 
     public async Task<bool> UserNameExistsAsync(string userName, int excludeId = 0) =>
@@ -198,6 +202,10 @@ public sealed class UserRepository(DbSession session) : RepositoryBase(session),
     public Task RecordLoginSuccessAsync(int userId, DateTime loginAt) =>
         ExecuteAsync("UPDATE dbo.AppUser SET AccessFailedCount = 0, LockoutEnd = NULL, LastLoginAt = @LoginAt WHERE Id = @Id;",
             new { Id = userId, LoginAt = loginAt });
+
+    public Task UpdateAppearanceAsync(int userId, string theme, string colorMode) =>
+        ExecuteAsync("UPDATE dbo.AppUser SET Theme = @Theme, ColorMode = @ColorMode WHERE Id = @Id;",
+            new { Id = userId, Theme = theme, ColorMode = colorMode });
 
     public Task RecordLoginFailureAsync(int userId, int failedCount, DateTime? lockoutEnd) =>
         ExecuteAsync("UPDATE dbo.AppUser SET AccessFailedCount = @FailedCount, LockoutEnd = @LockoutEnd WHERE Id = @Id;",

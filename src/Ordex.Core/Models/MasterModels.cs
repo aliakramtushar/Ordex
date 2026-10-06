@@ -20,6 +20,10 @@ public sealed class BusinessUnitListItem
     public bool IsActive { get; set; }
 }
 
+public sealed class UserFilter : PagedQuery
+{
+}
+
 public sealed class UserListItem
 {
     public int Id { get; set; }

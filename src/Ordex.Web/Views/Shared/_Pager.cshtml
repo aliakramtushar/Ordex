@@ -1,4 +1,5 @@
 @model PagerModel
+@* Server-side pager: only one page of rows is ever loaded. Page links keep every filter. *@
 @if (Model.TotalCount > 0)
 {
     var start = Math.Max(1, Model.Page - 2);
@@ -6,16 +7,38 @@
     start = Math.Max(1, end - 4);
 
     <nav class="pager" aria-label="Pages">
-        <span>@Model.FirstItem–@Model.LastItem of @Model.TotalCount</span>
+        <div class="pager-info">
+            <span>@Model.FirstItem.ToString("N0")–@Model.LastItem.ToString("N0") of @Model.TotalCount.ToString("N0")</span>
+            @if (Model.AllowPageSize && Model.TotalCount > PagerModel.PageSizes[0])
+            {
+                <label class="pager-size">
+                    <span class="visually-hidden">Rows per page</span>
+                    <select class="form-select form-select-sm" data-page-size aria-label="Rows per page">
+                        @foreach (var size in PagerModel.PageSizes)
+                        {
+                            <option value="@size" selected="@(size == Model.PageSize)">@size / page</option>
+                        }
+                    </select>
+                </label>
+            }
+        </div>
         @if (Model.TotalPages > 1)
         {
             <div class="pages">
-                <a class="pg @(Model.Page <= 1 ? "disabled" : "")" href="@Model.PageUrl(Model.Page - 1)" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                @if (start > 1)
+                {
+                    <a class="pg d-none d-sm-grid" href="@Model.PageUrl(1)" aria-label="First page"><i class="bi bi-chevron-double-left"></i></a>
+                }
+                <a class="pg @(Model.Page <= 1 ? "disabled" : "")" href="@Model.PageUrl(Model.Page - 1)" aria-label="Previous page" rel="prev"><i class="bi bi-chevron-left"></i></a>
                 @for (var p = start; p <= end; p++)
                 {
                     <a class="pg @(p == Model.Page ? "active" : "")" href="@Model.PageUrl(p)" aria-current="@(p == Model.Page ? "page" : null)">@p</a>
                 }
-                <a class="pg @(Model.Page >= Model.TotalPages ? "disabled" : "")" href="@Model.PageUrl(Model.Page + 1)" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+                <a class="pg @(Model.Page >= Model.TotalPages ? "disabled" : "")" href="@Model.PageUrl(Model.Page + 1)" aria-label="Next page" rel="next"><i class="bi bi-chevron-right"></i></a>
+                @if (end < Model.TotalPages)
+                {
+                    <a class="pg d-none d-sm-grid" href="@Model.PageUrl(Model.TotalPages)" aria-label="Last page (@Model.TotalPages)"><i class="bi bi-chevron-double-right"></i></a>
+                }
             </div>
         }
     </nav>

@@ -44,6 +44,8 @@ public sealed class AuthenticatedUser
     public int BusinessUnitId { get; init; }
     public string CompanyName { get; init; } = string.Empty;
     public string BusinessUnitName { get; init; } = string.Empty;
+    public string Theme { get; init; } = Appearance.DefaultTheme;
+    public string ColorMode { get; init; } = Appearance.DefaultMode;
 }
 
 public interface IAuthService
@@ -57,6 +59,9 @@ public interface IAuthService
     /// Lets an admin's change (deactivate / move user) take effect without waiting for the cookie to expire.
     /// </summary>
     Task<bool> IsSessionValidAsync(int userId, Enums.UserRole role, int companyId, int businessUnitId);
+
+    /// <summary>Saves the signed-in user's theme and light/dark mode.</summary>
+    Task<ServiceResult> SaveAppearanceAsync(string theme, string colorMode);
 }
 
 public interface ICompanyService
@@ -87,7 +92,7 @@ public interface IBusinessUnitService
 
 public interface IUserService
 {
-    Task<IReadOnlyList<UserListItem>> GetListAsync(string? search);
+    Task<PagedResult<UserListItem>> GetPagedAsync(UserFilter filter);
     Task<UserInput?> GetForEditAsync(int id);
     Task<ServiceResult<int>> SaveAsync(UserInput input);
 }

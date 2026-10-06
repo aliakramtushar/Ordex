@@ -1,0 +1,77 @@
+@model SettingsViewModel
+@{
+    ViewData["Title"] = "Theme & settings";
+    var modes = new[]
+    {
+        (Key: Ordex.Core.Common.Appearance.ColorModes.Light, Label: "Light", Icon: "bi-sun"),
+        (Key: Ordex.Core.Common.Appearance.ColorModes.Dark, Label: "Dark", Icon: "bi-moon-stars"),
+        (Key: Ordex.Core.Common.Appearance.ColorModes.System, Label: "Match device", Icon: "bi-phone")
+    };
+}
+
+<div class="row justify-content-center">
+<div class="col-12 col-xl-10">
+
+<div class="page-head d-none d-lg-flex">
+    <div>
+        <h1>Theme &amp; settings</h1>
+        <div class="sub">Your colours follow you on every device you sign in to. Other users keep their own.</div>
+    </div>
+</div>
+
+<form method="post" asp-action="Index" data-appearance-form>
+
+    <section class="form-section">
+        <div class="form-section-title"><i class="bi bi-palette"></i> Colour theme</div>
+        <div class="theme-grid" role="radiogroup" aria-label="Colour theme">
+            @foreach (var t in ThemeCatalog.All)
+            {
+                var id = $"theme-{t.Key}";
+                <input class="visually-hidden theme-radio" type="radio" name="theme" id="@id" value="@t.Key" checked="@(t.Key == Model.Theme)" />
+                <label class="theme-card" for="@id">
+                    <span class="theme-preview" style="--p-ink:@t.Ink; --p-brand:@t.Brand; --p-accent:@t.Accent; --p-canvas:@t.Canvas" aria-hidden="true">
+                        <span class="tp-side"><i></i><i class="on"></i><i></i><i></i></span>
+                        <span class="tp-main">
+                            <span class="tp-bar"></span>
+                            <span class="tp-card"><b></b><em></em></span>
+                            <span class="tp-btn"></span>
+                        </span>
+                    </span>
+                    <span class="theme-info">
+                        <span class="theme-name">@t.Name @if (t.Key == Ordex.Core.Common.Appearance.DefaultTheme) { <span class="badge-soft">Default</span> }</span>
+                        <span class="theme-desc">@t.Description</span>
+                        <span class="theme-swatches">
+                            @foreach (var sw in t.Swatches) { <i style="background:@sw" title="@sw"></i> }
+                        </span>
+                    </span>
+                    <span class="theme-check"><i class="bi bi-check-lg"></i></span>
+                </label>
+            }
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="form-section-title"><i class="bi bi-circle-half"></i> Light or dark</div>
+        <div class="mode-switch" role="radiogroup" aria-label="Light or dark">
+            @foreach (var m in modes)
+            {
+                var id = $"mode-{m.Key}";
+                <input class="visually-hidden" type="radio" name="colorMode" id="@id" value="@m.Key" checked="@(m.Key == Model.ColorMode)" />
+                <label for="@id"><i class="bi @m.Icon"></i> @m.Label</label>
+            }
+        </div>
+        <div class="form-hint mt-2">“Match device” follows your phone or computer setting automatically.</div>
+    </section>
+
+    <div class="form-actions">
+        <span class="text-muted small me-auto d-none d-md-inline">Tap a theme to preview it on this page.</span>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save my look</button>
+    </div>
+</form>
+
+</div>
+</div>
+
+@section Scripts {
+    <script src="~/js/settings.js" asp-append-version="true"></script>
+}

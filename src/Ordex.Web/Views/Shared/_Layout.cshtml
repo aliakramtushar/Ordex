@@ -7,16 +7,21 @@
     var canSwitchScope = CurrentUser.CompanyId == 0 || CurrentUser.BusinessUnitId == 0;
     var scopeText = await ScopeLabel.TextAsync(CurrentUser, Lookups, User);
 
+    // Per-user look (from the sign-in cookie). "system" is resolved in the browser by theme.js.
+    var palette = UserAppearance.Theme(User);
+    var colorMode = UserAppearance.Mode(User);
+    var startDark = colorMode == Ordex.Core.Common.Appearance.ColorModes.Dark;
+
     string Active(string c, string? a = null) =>
         string.Equals(controller, c, StringComparison.OrdinalIgnoreCase) &&
         (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase)) ? "active" : string.Empty;
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="@palette" data-mode="@colorMode" data-theme="@(startDark ? "dark" : "light")" data-bs-theme="@(startDark ? "dark" : "light")" data-mode-url="/settings/mode">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f1f3d" />
+    <meta name="theme-color" content="@ThemeCss.ThemeColor(palette, startDark)" />
     <meta name="robots" content="noindex, nofollow" />
     <title>@title · Ordex</title>
     <link rel="icon" href="~/img/favicon.svg" type="image/svg+xml" />
@@ -24,6 +29,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/theme.css?v=@ThemeCss.Version" />
     @await RenderSectionAsync("Head", required: false)
 </head>
 <body>
@@ -90,6 +96,7 @@
                             <div class="text-muted small">@CurrentUser.UserName · @CurrentUser.Role.ToText()</div>
                         </div>
                         <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" asp-controller="Settings" asp-action="Index"><i class="bi bi-palette"></i> Theme &amp; settings</a>
                         <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key"></i> Change password</a>
                         <button type="button" class="dropdown-item" data-theme-toggle><i class="bi bi-circle-half"></i> Light / dark theme</button>
                         <form method="post" asp-controller="Account" asp-action="Logout">

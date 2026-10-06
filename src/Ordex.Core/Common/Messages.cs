@@ -30,6 +30,8 @@ public static class Messages
     public const string AccountInactive = "Your account is inactive. Please contact your administrator.";
     public const string PasswordChanged = "Password changed successfully.";
     public const string WrongCurrentPassword = "Current password is incorrect.";
+    public const string AppearanceSaved = "Your look is saved.";
+    public const string InvalidAppearance = "Please choose one of the listed themes.";
     public const string UserNameTaken = "This username is already taken.";
 
     // Orders

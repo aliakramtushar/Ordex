@@ -58,13 +58,28 @@
 
   // ───────────────────────── Theme toggle ─────────────────────────
   function initThemeToggle() {
+    const root = document.documentElement;
     $$("[data-theme-toggle]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        document.documentElement.setAttribute("data-theme", next);
-        document.documentElement.setAttribute("data-bs-theme", next);
-        try { localStorage.setItem("ordex-theme", next); } catch (e) { /* ignore */ }
+        const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        root.setAttribute("data-bs-theme", next);
         document.dispatchEvent(new CustomEvent("ordex:theme", { detail: next }));
+
+        // Signed in: save it on the user (works on every device). Otherwise remember it here.
+        const url = root.getAttribute("data-mode-url");
+        if (url && root.hasAttribute("data-mode")) {
+          root.setAttribute("data-mode", next);
+          const body = new URLSearchParams({ colorMode: next });
+          fetch(url, {
+            method: "POST",
+            body,
+            credentials: "same-origin",
+            headers: { "RequestVerificationToken": csrfToken(), "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }
+          }).catch(() => { /* offline: the page still switched */ });
+        } else {
+          try { localStorage.setItem("ordex-theme", next); } catch (e) { /* ignore */ }
+        }
       });
     });
   }
@@ -372,6 +387,16 @@
     $$("input[data-select-on-focus]").forEach(el => el.addEventListener("focus", () => setTimeout(() => el.select(), 0)));
   }
 
+  /** Rows-per-page selector under lists: reload page 1 with the new size, keeping every filter. */
+  function initPageSize() {
+    $$("select[data-page-size]").forEach(sel => sel.addEventListener("change", () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("pageSize", sel.value);
+      url.searchParams.set("page", "1");
+      window.location.href = url.toString();
+    }));
+  }
+
   window.ordex = { getJson, toast, csrfToken };
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -391,5 +416,6 @@
     initToggleByValue();
     initNumberSelect();
     initCopyShare();
+    initPageSize();
   });
 })();

@@ -39,4 +39,10 @@ public sealed class AppUser : TenantEntity
     public int AccessFailedCount { get; set; }
     public DateTime? LockoutEnd { get; set; }
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>Colour theme key (see Common.Appearance).</summary>
+    public string Theme { get; set; } = Common.Appearance.DefaultTheme;
+
+    /// <summary>light / dark / system.</summary>
+    public string ColorMode { get; set; } = Common.Appearance.DefaultMode;
 }

@@ -5,11 +5,15 @@
     <div class="page-actions"><a class="btn btn-primary" asp-action="Create"><i class="bi bi-person-plus"></i> New user</a></div>
 </div>
 <form method="get" class="toolbar" role="search">
-    <div class="search"><i class="bi bi-search"></i><input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Name, username or phone" aria-label="Search users" /></div>
+    <div class="search"><i class="bi bi-search"></i><input type="search" name="search" value="@Model.Filter.Search" class="form-control" placeholder="Name, username or phone" aria-label="Search users" /></div>
     <button class="btn btn-primary" type="submit" aria-label="Search"><i class="bi bi-arrow-right"></i></button>
 </form>
+@if (Model.Result.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-people", "No users found", string.IsNullOrWhiteSpace(Model.Filter.Search) ? "Add the first user." : "Try another name or username."))" />
+}
 <div class="list-card">
-    @foreach (var u in Model.Users)
+    @foreach (var u in Model.Result.Items)
     {
         <a class="list-row" asp-action="Edit" asp-route-id="@u.Id">
             <span class="avatar">@Fmt.Initials(u.FullName)</span>
@@ -21,3 +25,4 @@
         </a>
     }
 </div>
+<partial name="_Pager" model="@PagerModel.From(Model.Result, p => Url.Action("Index", new { search = Model.Filter.Search, page = p, pageSize = Model.Filter.PageSize })!)" />

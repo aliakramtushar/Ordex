@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="@Ordex.Core.Common.Appearance.DefaultTheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f1f3d" />
+    <meta name="theme-color" content="@ThemeCss.ThemeColor(null, false)" />
     <meta name="description" content="Ordex – pre-order, delivery, stock and profit tracking for import shops. Built for the phone." />
     <title>@(ViewData["Title"] is string t ? $"{t} · Ordex" : "Ordex · Pre-orders, deliveries & profit in one place")</title>
     <link rel="icon" href="~/img/favicon.svg" type="image/svg+xml" />
@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/public.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/theme.css?v=@ThemeCss.Version" />
 </head>
 <body>
     @RenderBody()

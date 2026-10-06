@@ -44,13 +44,14 @@ public interface IUserRepository
 {
     Task<AppUser?> GetByUserNameAsync(string userName);
     Task<AppUser?> GetByIdAsync(int id);
-    Task<IReadOnlyList<UserListItem>> GetListAsync(TenantScope scope, string? search);
+    Task<PagedResult<UserListItem>> GetPagedAsync(TenantScope scope, UserFilter filter);
     Task<bool> UserNameExistsAsync(string userName, int excludeId = 0);
     Task<bool> AnySuperAdminAsync();
     Task<int> InsertAsync(AppUser user);
     Task UpdateAsync(AppUser user);
     Task UpdatePasswordAsync(int userId, string passwordHash, int updatedBy, DateTime updatedAt);
     Task RecordLoginSuccessAsync(int userId, DateTime loginAt);
+    Task UpdateAppearanceAsync(int userId, string theme, string colorMode);
     Task RecordLoginFailureAsync(int userId, int failedCount, DateTime? lockoutEnd);
 }
 

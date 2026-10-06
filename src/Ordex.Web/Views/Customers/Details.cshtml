@@ -44,6 +44,6 @@ else
     <div class="order-list">
         @foreach (var order in Model.Orders.Items) { <partial name="_OrderCard" model="order" /> }
     </div>
-    <partial name="_Pager" model="@PagerModel.From(Model.Orders, p => Url.Action("Details", new { id = c.Id, page = p })!)" />
+    <partial name="_Pager" model="@PagerModel.From(Model.Orders, p => Url.Action("Details", new { id = c.Id, page = p })!, allowPageSize: false)" />
 }
 <partial name="_OrderModals" />

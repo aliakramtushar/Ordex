@@ -61,8 +61,15 @@ public abstract class RepositoryBase(DbSession session)
     }
 
     /// <summary>
-    /// Paging in one round trip: total count + one page of rows.
-    /// <paramref name="orderBy"/> must be a constant from code – never user input.
+    /// Server-side paging in one round trip: total count + one page of rows (OFFSET / FETCH).
+    /// <paramref name="orderBy"/> must be a constant from code – never user input; it should end
+    /// with a unique column (e.g. Id) so rows never repeat or go missing between pages.
+    /// <para>
+    /// OPTION (RECOMPILE): the tenant filter "(@CompanyId = 0 OR CompanyId = @CompanyId)" and optional
+    /// search filters are "catch-all" predicates. Recompiling lets SQL Server plan for the actual values,
+    /// so a staff user's query seeks its unit's index instead of reusing a plan built for "all companies".
+    /// The compile cost (~ms) is tiny next to scanning a large table.
+    /// </para>
     /// </summary>
     protected async Task<PagedResult<T>> QueryPagedAsync<T>(
         string select, string fromWhere, string orderBy, DynamicParameters param, PagedQuery query)
@@ -71,20 +78,31 @@ public abstract class RepositoryBase(DbSession session)
         param.Add("PageSize", query.PageSize);
 
         var sql = $"""
-            SELECT COUNT(1) {fromWhere};
+            SELECT COUNT(1) {fromWhere}
+            OPTION (RECOMPILE);
 
             SELECT {select}
             {fromWhere}
             ORDER BY {orderBy}
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
+            OPTION (RECOMPILE);
             """;
 
-        return await QueryMultipleAsync(sql, param, async grid =>
+        var result = await QueryMultipleAsync(sql, param, async grid =>
         {
             var total = await grid.ReadSingleAsync<int>();
             var items = (await grid.ReadAsync<T>()).AsList();
             return new PagedResult<T>(items, total, query.Page, query.PageSize);
         });
+
+        // A page past the end (old bookmark, rows deleted meanwhile): show the last real page instead of an empty list.
+        if (result.Items.Count == 0 && result.TotalCount > 0 && query.Page > result.TotalPages)
+        {
+            query.Page = result.TotalPages;
+            return await QueryPagedAsync<T>(select, fromWhere, orderBy, param, query);
+        }
+
+        return result;
     }
 
     private CommandDefinition Command(string sql, object? param, CommandType commandType = CommandType.Text) =>

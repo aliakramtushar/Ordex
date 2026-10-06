@@ -98,31 +98,53 @@ public sealed class ProfitLossViewModel
 
 public sealed class UserIndexViewModel
 {
-    public required IReadOnlyList<UserListItem> Users { get; init; }
-    public string? Search { get; init; }
+    public required PagedResult<UserListItem> Result { get; init; }
+    public required UserFilter Filter { get; init; }
 }
 
 /// <summary>Data for the reusable pager partial.</summary>
 public sealed class PagerModel
 {
+    /// <summary>Rows-per-page choices offered under every list.</summary>
+    public static readonly IReadOnlyList<int> PageSizes = [20, 50, 100];
+    public const int DefaultPageSize = 20;
+
     public required int Page { get; init; }
+    public required int PageSize { get; init; }
     public required int TotalPages { get; init; }
     public required int TotalCount { get; init; }
     public required int FirstItem { get; init; }
     public required int LastItem { get; init; }
 
-    /// <summary>Builds the link for a page while keeping all current filters.</summary>
+    /// <summary>False where the page size is fixed by the screen (e.g. orders inside a customer page).</summary>
+    public bool AllowPageSize { get; init; } = true;
+
+    /// <summary>Builds the link for a page while keeping all current filters (and the chosen page size).</summary>
     public required Func<int, string> PageUrl { get; init; }
 
-    public static PagerModel From<T>(PagedResult<T> result, Func<int, string> pageUrl) => new()
+    public static PagerModel From<T>(PagedResult<T> result, Func<int, string> pageUrl, bool allowPageSize = true) => new()
     {
         Page = result.Page,
+        PageSize = result.PageSize,
         TotalPages = result.TotalPages,
         TotalCount = result.TotalCount,
         FirstItem = result.FirstItemNumber,
         LastItem = result.LastItemNumber,
-        PageUrl = pageUrl
+        AllowPageSize = allowPageSize,
+        PageUrl = allowPageSize && result.PageSize != DefaultPageSize
+            ? p => WithPageSize(pageUrl(p), result.PageSize)
+            : pageUrl
     };
+
+    private static string WithPageSize(string url, int pageSize)
+    {
+        var q = url.IndexOf('?');
+        var path = q < 0 ? url : url[..q];
+        var query = q < 0 ? new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>()
+                          : Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(url[q..]);
+        query["pageSize"] = pageSize.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(path, query);
+    }
 }
 
 /// <summary>Shared modal forms for order status actions (list + details pages).</summary>
@@ -137,4 +159,10 @@ public sealed class TrackViewModel
 
     /// <summary>Formats amounts in the order's own company currency (the page has no signed-in user).</summary>
     public required Money Money { get; init; }
+}
+
+public sealed class SettingsViewModel
+{
+    public required string Theme { get; init; }
+    public required string ColorMode { get; init; }
 }

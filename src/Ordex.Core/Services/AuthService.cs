@@ -93,8 +93,22 @@ public sealed class AuthService(
             CompanyId = user.CompanyId,
             BusinessUnitId = user.BusinessUnitId,
             CompanyName = companyName,
-            BusinessUnitName = unitName
+            BusinessUnitName = unitName,
+            Theme = Appearance.NormalizeTheme(user.Theme),
+            ColorMode = Appearance.NormalizeMode(user.ColorMode)
         });
+    }
+
+    public async Task<ServiceResult> SaveAppearanceAsync(string theme, string colorMode)
+    {
+        if (!currentUser.IsAuthenticated)
+            return ServiceResult.Fail(Messages.AccessDenied);
+
+        if (!Appearance.IsValidTheme(theme) || !Appearance.IsValidMode(colorMode))
+            return ServiceResult.Fail(Messages.InvalidAppearance);
+
+        await users.UpdateAppearanceAsync(currentUser.UserId, theme, colorMode);
+        return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> ChangePasswordAsync(ChangePasswordInput input)

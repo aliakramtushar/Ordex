@@ -141,8 +141,8 @@ public sealed class BusinessUnitsController(IBusinessUnitService units) : AppCon
 public sealed class UsersController(IUserService users) : AppController
 {
     [HttpGet]
-    public async Task<IActionResult> Index(string? search) =>
-        View(new UserIndexViewModel { Users = await users.GetListAsync(search), Search = search });
+    public async Task<IActionResult> Index(UserFilter filter) =>
+        View(new UserIndexViewModel { Result = await users.GetPagedAsync(filter), Filter = filter });
 
     [HttpGet]
     public IActionResult Create() => View("Form", new UserInput());
