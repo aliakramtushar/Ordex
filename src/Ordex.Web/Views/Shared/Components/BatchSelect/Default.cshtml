@@ -1,0 +1,16 @@
+@model Ordex.Web.ViewComponents.BatchSelectModel
+@* Purchase batch dropdown. data-rate on each option feeds the purchase → sales currency auto calculation. *@
+<select class="form-select" id="@Model.Name" name="@Model.Name"
+        data-source="/lookup/batches"
+        data-depends-on="@(Model.DependsOnUnit ? "#BusinessUnitId" : null)"
+        data-param="businessUnitId"
+        data-extra-depends="#CompanyId" data-extra-param="companyId"
+        data-placeholder="No batch yet">
+    <option value="">No batch yet</option>
+    @foreach (var b in Model.Batches)
+    {
+        <option value="@b.Id" data-rate="@Fmt.Rate(b.ExchangeRate)" selected="@(b.Id == Model.Selected)">
+            @b.BatchNo · @Fmt.Date(b.BatchDate)@(b.IsPaid ? " · paid" : "")
+        </option>
+    }
+</select>

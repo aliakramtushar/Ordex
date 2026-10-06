@@ -1,0 +1,49 @@
+@model CustomerDetailsViewModel
+@inject TrackingLinks Links
+@{
+    var c = Model.Customer;
+    ViewData["Title"] = c.CustomerName;
+    ViewData["Back"] = Url.Action("Index");
+    ViewData["ReturnUrl"] = Url.Action("Details", new { id = c.Id });
+    var social = Fmt.SafeUrl(c.SocialLink);
+    var open = Model.Orders.Items
+        .Where(x => x.Status is OrderStatus.PreOrder or OrderStatus.OutForDelivery && !string.IsNullOrEmpty(x.TrackingToken))
+        .ToList();
+    var shopName = open.FirstOrDefault()?.BusinessUnitName ?? "us";
+    var linksMessage = open.Count == 0 ? null
+        : Links.Message(c.CustomerName, shopName, open.Select(x => (x.OrderNo, x.ProductName, x.TrackingToken)));
+}
+<div class="page-head">
+    <div class="d-flex align-items-center gap-3 min-w-0">
+        <span class="avatar" style="width:48px;height:48px;font-size:1rem">@Fmt.Initials(c.CustomerName)</span>
+        <div class="min-w-0">
+            <h1 class="text-truncate">@c.CustomerName</h1>
+            <div class="sub">@(c.Address ?? "No address saved")</div>
+        </div>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-controller="Orders" asp-action="Create" asp-route-customerId="@c.Id"><i class="bi bi-bag-plus"></i> New order</a>
+        @if (linksMessage is not null)
+        {
+            <a class="btn btn-whatsapp" href="@TrackingLinks.WhatsApp(c.Mobile, linksMessage)" target="_blank" rel="noopener noreferrer"
+               title="Send the links of all open orders"><i class="bi bi-whatsapp"></i> Send @(open.Count == 1 ? "order link" : $"{open.Count} order links")</a>
+        }
+        <a class="btn btn-soft" href="@Fmt.Tel(c.Mobile)"><i class="bi bi-telephone"></i> @c.Mobile</a>
+        @if (social is not null) { <a class="btn btn-light-ghost" href="@social" target="_blank" rel="noopener noreferrer nofollow"><i class="bi bi-chat-dots"></i> Social</a> }
+        <a class="btn btn-light-ghost" asp-action="Edit" asp-route-id="@c.Id"><i class="bi bi-pencil"></i> Edit</a>
+    </div>
+</div>
+
+<h2 class="h6 mb-2">Order history (@Model.Orders.TotalCount)</h2>
+@if (Model.Orders.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-bag", "No orders", "This customer has no orders yet."))" />
+}
+else
+{
+    <div class="order-list">
+        @foreach (var order in Model.Orders.Items) { <partial name="_OrderCard" model="order" /> }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Orders, p => Url.Action("Details", new { id = c.Id, page = p })!)" />
+}
+<partial name="_OrderModals" />

@@ -1,0 +1,48 @@
+@model ExpenseInput
+@{
+    ViewData["Title"] = Model.IsNew ? "Add expense" : "Edit expense";
+    ViewData["Back"] = Url.Action("Index");
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-5">
+    <div class="page-head d-none d-lg-flex"><div><h1>@ViewData["Title"]</h1></div></div>
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="@(Model.IsNew ? "Create" : "Edit")" asp-route-id="@(Model.IsNew ? null : Model.Id)" novalidate>
+        @if (Model.IsNew)
+        {
+            @await Component.InvokeAsync("ScopeFields", new { companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+        }
+        <section class="form-section">
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <label asp-for="Amount" class="form-label"></label>
+                    <div class="input-group"><span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span><input asp-for="Amount" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" /></div>
+                    <span asp-validation-for="Amount"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="ExpenseDate" class="form-label"></label>
+                    <input asp-for="ExpenseDate" class="form-control" type="date" value="@Fmt.InputDate(Model.ExpenseDate)" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="CategoryId">Category</label>
+                @await Component.InvokeAsync("CategorySelect", new { selected = Model.CategoryId, companyId = Model.CompanyId })
+            </div>
+            <div class="mb-3">
+                <label asp-for="BatchId" class="form-label"></label>
+                @await Component.InvokeAsync("BatchSelect", new { selected = Model.BatchId, companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+                <div class="form-hint">Optional – link cargo or customs costs to a buying trip.</div>
+            </div>
+            <div>
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+            </div>
+        </section>
+        <div class="form-actions">
+            <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
+        </div>
+    </form>
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

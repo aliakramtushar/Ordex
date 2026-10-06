@@ -1,0 +1,162 @@
+@model OrderInput
+@inject Ordex.Core.Abstractions.Services.ILookupService Lookups
+@{
+    ViewData["Title"] = Model.IsNew ? "New order" : "Edit order";
+    ViewData["Back"] = Model.IsNew ? Url.Action("Index") : Url.Action("Details", new { id = Model.Id });
+    var defaultRate = await Lookups.DefaultExchangeRateAsync(Model.CompanyId);
+}
+
+<div class="row justify-content-center">
+<div class="col-12 col-xl-10">
+
+<div class="page-head d-none d-lg-flex">
+    <div>
+        <h1>@ViewData["Title"]</h1>
+        <div class="sub">@(Model.IsNew ? "Type the mobile number first – returning customers fill in automatically." : "Update the order details.")</div>
+    </div>
+</div>
+
+<partial name="_FormErrors" />
+
+<form method="post" enctype="multipart/form-data" novalidate
+      asp-action="@(Model.IsNew ? "Create" : "Edit")" asp-route-id="@(Model.IsNew ? null : Model.Id)"
+      data-order-form data-is-new="@(Model.IsNew ? "true" : "false")" data-default-rate="@Fmt.Rate(defaultRate)" data-sale-symbol="@Money.SaleSymbol" data-sale-code="@Money.SaleCode" data-buy-code="@Money.BuyCode" data-sale-decimals="@Money.Sales.Decimals">
+    <input type="hidden" asp-for="ProductImage" />
+
+    <div class="row g-3">
+        <div class="col-12 col-lg-6">
+
+            @if (Model.IsNew)
+            {
+                @await Component.InvokeAsync("ScopeFields", new { companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+            }
+
+            <section class="form-section">
+                <div class="form-section-title"><i class="bi bi-person"></i> Customer</div>
+                <div class="mb-3">
+                    <label asp-for="Mobile" class="form-label"></label>
+                    <div class="ac-wrap">
+                        <input asp-for="Mobile" class="form-control" type="tel" inputmode="tel" autocomplete="off" placeholder="01XXXXXXXXX" />
+                        <div class="ac-list" data-customer-list role="listbox"></div>
+                    </div>
+                    <span asp-validation-for="Mobile"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="CustomerName" class="form-label"></label>
+                    <input asp-for="CustomerName" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="CustomerName"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="SocialLink" class="form-label"></label>
+                    <input asp-for="SocialLink" class="form-control" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="facebook.com/…" />
+                    <span asp-validation-for="SocialLink"></span>
+                </div>
+                <div>
+                    <label asp-for="DeliveryAddress" class="form-label"></label>
+                    <textarea asp-for="DeliveryAddress" class="form-control" rows="2"></textarea>
+                    <span asp-validation-for="DeliveryAddress"></span>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="form-section-title"><i class="bi bi-bag"></i> Product</div>
+                <div class="mb-3">
+                    <label asp-for="ProductName" class="form-label"></label>
+                    <input asp-for="ProductName" class="form-control" />
+                    <span asp-validation-for="ProductName"></span>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label asp-for="ProductSize" class="form-label"></label>
+                        <input asp-for="ProductSize" class="form-control" placeholder="M / 32 / 6Y" />
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="OrderDate" class="form-label"></label>
+                        <input asp-for="OrderDate" class="form-control" type="date" value="@Fmt.InputDate(Model.OrderDate)" />
+                        <span asp-validation-for="OrderDate"></span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <partial name="_ImagePicker" model="@((Model.ProductImage, "Product picture"))" />
+                </div>
+                <div>
+                    <label asp-for="ProductLink" class="form-label"></label>
+                    <input asp-for="ProductLink" class="form-control" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="Shop link (optional)" />
+                    <span asp-validation-for="ProductLink"></span>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <section class="form-section">
+                <div class="form-section-title"><i class="bi bi-currency-exchange"></i> Price</div>
+                <div class="mb-3">
+                    <label asp-for="BatchId" class="form-label"></label>
+                    @await Component.InvokeAsync("BatchSelect", new { selected = Model.BatchId, companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+                    <div class="form-hint"><i class="bi bi-info-circle"></i> <span data-rate-label></span></div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label asp-for="PurchasePriceSgd" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">@(Money.BuySymbol == "" ? Money.BuyCode : Money.BuySymbol)</span>
+                            <input asp-for="PurchasePriceSgd" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" />
+                        </div>
+                        <span asp-validation-for="PurchasePriceSgd"></span>
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="ProductPriceBdt" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span>
+                            <input asp-for="ProductPriceBdt" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" />
+                        </div>
+                        <a href="#" class="form-hint d-inline-block" data-recalc-bdt><i class="bi bi-arrow-repeat"></i> Recalculate from @Money.BuyCode</a>
+                        <span asp-validation-for="ProductPriceBdt"></span>
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="SellingPrice" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span>
+                            <input asp-for="SellingPrice" class="form-control" type="number" min="0" step="any" inputmode="decimal" />
+                        </div>
+                        <span asp-validation-for="SellingPrice"></span>
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="AdvanceAmount" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span>
+                            <input asp-for="AdvanceAmount" class="form-control" type="number" min="0" step="any" inputmode="decimal" />
+                        </div>
+                        <span asp-validation-for="AdvanceAmount"></span>
+                    </div>
+                </div>
+                <div class="calc-box" aria-live="polite">
+                    <div><div class="lbl">Due amount</div><div class="val" data-calc-due>@Money.Sale(0)</div></div>
+                    <div><div class="lbl">Profit</div><div class="val" data-calc-profit>@Money.Sale(0)</div></div>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <div class="form-section-title"><i class="bi bi-journal-text"></i> Notes</div>
+                <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Anything to remember (optional)"></textarea>
+            </section>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+        @if (Model.IsNew)
+        {
+            <button type="submit" name="next" value="new" class="btn btn-soft d-none d-md-inline-flex"><i class="bi bi-plus-lg"></i> Save &amp; add another</button>
+        }
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> @(Model.IsNew ? "Save order" : "Save changes")</button>
+    </div>
+</form>
+
+</div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/order-form.js" asp-append-version="true"></script>
+}

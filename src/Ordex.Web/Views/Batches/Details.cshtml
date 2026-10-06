@@ -1,0 +1,53 @@
+@model BatchDetailsViewModel
+@{
+    var b = Model.Batch;
+    ViewData["Title"] = b.BatchNo;
+    ViewData["Back"] = Url.Action("Index");
+    var returnUrl = Url.Action("Details", new { id = b.BatchId })!;
+    ViewData["ReturnUrl"] = returnUrl;
+}
+
+<div class="page-head">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="mb-0">@b.BatchNo</h1>
+            @if (b.IsPaid) { <span class="badge-soft green"><i class="bi bi-check2"></i> Paid @Fmt.Date(b.PaidDate)</span> }
+            else { <span class="badge-soft amber"><i class="bi bi-hourglass"></i> Unpaid</span> }
+        </div>
+        <div class="sub">@Fmt.Date(b.BatchDate) · @Money.RateText(b.ExchangeRate)@(b.BusinessUnitName is null ? "" : $" · {b.BusinessUnitName}")</div>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-light-ghost" asp-action="Edit" asp-route-id="@b.BatchId"><i class="bi bi-pencil"></i> Edit</a>
+        <form method="post" asp-action="SetPaid" asp-route-id="@b.BatchId"
+              data-confirm="@(b.IsPaid ? "Mark this batch as unpaid?" : $"Mark {Money.Buy(b.TotalSgd)} as paid?")">
+            <input type="hidden" name="isPaid" value="@((!b.IsPaid).ToString().ToLowerInvariant())" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <button type="submit" class="btn @(b.IsPaid ? "btn-light-ghost" : "btn-primary")">
+                <i class="bi @(b.IsPaid ? "bi-arrow-counterclockwise" : "bi-check2-circle")"></i> @(b.IsPaid ? "Mark unpaid" : "Mark as paid")
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="kpi-grid mb-3">
+    <div class="kpi accent"><div class="kpi-label"><i class="bi bi-currency-exchange"></i> Total to pay</div><div class="kpi-value">@Money.Buy(b.TotalSgd)</div><div class="kpi-sub">≈ @Money.Sale(b.PayableBdt)</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-bag"></i> Orders</div><div class="kpi-value">@b.OrderCount</div><div class="kpi-sub num">@Money.Buy(b.OrderSgd)</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-box-seam"></i> Extra items</div><div class="kpi-value">@b.ExtraCount</div><div class="kpi-sub num">@Money.Buy(b.ExtraSgd)</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-receipt"></i> Recorded cost</div><div class="kpi-value">@Money.Sale(b.TotalBdt)</div><div class="kpi-sub">Sum of product costs</div></div>
+</div>
+
+@if (!string.IsNullOrEmpty(b.Notes)) { <div class="alert alert-info small"><i class="bi bi-journal-text"></i> @b.Notes</div> }
+
+<h2 class="h6 mb-2">Orders in this batch</h2>
+@if (Model.Orders.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-bag", "No orders in this batch", "Pick this batch on an order to include it here."))" />
+}
+else
+{
+    <div class="order-list">
+        @foreach (var order in Model.Orders.Items) { <partial name="_OrderCard" model="order" /> }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Orders, p => Url.Action("Details", new { id = b.BatchId, page = p })!)" />
+}
+<partial name="_OrderModals" />

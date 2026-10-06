@@ -1,0 +1,21 @@
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    Layout = signedIn ? "_Layout" : "_PublicLayout";
+    var code = ViewData["Code"] as int? ?? 500;
+    var icon = code switch { 403 => "bi-shield-lock", 404 => "bi-signpost-split", 429 => "bi-hourglass-split", _ => "bi-exclamation-triangle" };
+}
+<div class="d-grid align-items-center" style="min-height:@(signedIn ? "60vh" : "100vh");padding:16px">
+    <div class="text-center mx-auto" style="max-width:440px">
+        <div class="icon-circle mx-auto mb-3" style="width:56px;height:56px;font-size:1.5rem"><i class="bi @icon"></i></div>
+        <div class="small-caps mb-1">Error @code</div>
+        <h1 class="h4">@ViewData["Title"]</h1>
+        <p class="text-2">@ViewData["Message"]</p>
+        @if (ViewData["TraceId"] is string traceId)
+        {
+            <p class="text-muted small">Reference: <code>@traceId</code></p>
+        }
+        <div class="d-flex gap-2 justify-content-center mt-3">
+            <a class="btn btn-primary" href="@(signedIn ? "/dashboard" : "/")"><i class="bi bi-house"></i> @(signedIn ? "Dashboard" : "Home")</a>
+        </div>
+    </div>
+</div>

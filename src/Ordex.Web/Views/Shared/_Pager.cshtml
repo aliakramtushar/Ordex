@@ -1,0 +1,22 @@
+@model PagerModel
+@if (Model.TotalCount > 0)
+{
+    var start = Math.Max(1, Model.Page - 2);
+    var end = Math.Min(Model.TotalPages, start + 4);
+    start = Math.Max(1, end - 4);
+
+    <nav class="pager" aria-label="Pages">
+        <span>@Model.FirstItem–@Model.LastItem of @Model.TotalCount</span>
+        @if (Model.TotalPages > 1)
+        {
+            <div class="pages">
+                <a class="pg @(Model.Page <= 1 ? "disabled" : "")" href="@Model.PageUrl(Model.Page - 1)" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>
+                @for (var p = start; p <= end; p++)
+                {
+                    <a class="pg @(p == Model.Page ? "active" : "")" href="@Model.PageUrl(p)" aria-current="@(p == Model.Page ? "page" : null)">@p</a>
+                }
+                <a class="pg @(Model.Page >= Model.TotalPages ? "disabled" : "")" href="@Model.PageUrl(Model.Page + 1)" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        }
+    </nav>
+}

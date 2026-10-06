@@ -1,0 +1,206 @@
+@model OrderDetailsViewModel
+@inject TrackingLinks Links
+@{
+    var o = Model.Order;
+    ViewData["Title"] = o.OrderNo;
+    ViewData["Back"] = Url.Action("Index");
+    var returnUrl = Url.Action("Details", new { id = o.Id })!;
+    ViewData["ReturnUrl"] = returnUrl;
+    var received = o.AdvanceAmount + o.CollectedAmount;
+    var fill = JsonSerializer.Serialize(new
+    {
+        OrderId = o.Id,
+        CollectedAmount = o.DueAmount,
+        RefundAmount = 0,
+        label = $"{o.OrderNo} · {o.CustomerName}",
+        received = Money.Sale(received),
+        due = Money.Sale(o.DueAmount)
+    });
+    var social = Fmt.SafeUrl(o.SocialLink);
+    var productLink = Fmt.SafeUrl(o.ProductLink);
+    var shopName = o.BusinessUnitName ?? o.CompanyName ?? "us";
+    var trackUrl = Links.Url(o.TrackingToken);
+    var trackMessage = Links.Message(o.CustomerName, shopName, o.OrderNo, o.ProductName, o.TrackingToken);
+}
+
+<div class="page-head">
+    <div class="min-w-0">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="mb-0">@o.ProductName</h1>
+            <partial name="_StatusBadge" model="@o.Status" />
+        </div>
+        <div class="sub">@o.OrderNo · @Fmt.Date(o.OrderDate)@(o.BusinessUnitName is null ? "" : $" · {o.BusinessUnitName}")</div>
+    </div>
+    @if (OrderWorkflow.CanEdit(o.Status))
+    {
+        <div class="page-actions">
+            <a class="btn btn-light-ghost" asp-action="Edit" asp-route-id="@o.Id"><i class="bi bi-pencil"></i> Edit</a>
+        </div>
+    }
+</div>
+
+<!-- Status actions -->
+@if (o.Status != OrderStatus.Returned)
+{
+    <div class="card-x mb-3">
+        <div class="card-x-body d-flex gap-2 flex-wrap align-items-center">
+            <span class="text-2 me-auto small">
+                @(o.Status switch
+                {
+                    OrderStatus.PreOrder => "Ready to send? Mark it when the parcel leaves.",
+                    OrderStatus.OutForDelivery => "With the courier. Confirm delivery or record a return.",
+                    _ => "Delivered. You can still record a return if the product comes back."
+                })
+            </span>
+            @if (OrderWorkflow.CanDispatch(o.Status))
+            {
+                <form method="post" asp-action="Dispatch">
+                    <input type="hidden" name="OrderId" value="@o.Id" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                    <button type="submit" class="btn btn-amber"><i class="bi bi-truck"></i> Go for delivery</button>
+                </form>
+            }
+            @if (OrderWorkflow.CanUndoDispatch(o.Status))
+            {
+                <form method="post" asp-action="UndoDispatch">
+                    <input type="hidden" name="OrderId" value="@o.Id" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                    <button type="submit" class="btn btn-ghost"><i class="bi bi-arrow-left-circle"></i> Back to pre-order</button>
+                </form>
+            }
+            @if (OrderWorkflow.CanDeliver(o.Status))
+            {
+                <button type="button" class="btn btn-green" data-bs-toggle="modal" data-bs-target="#deliverModal" data-fill="@fill"><i class="bi bi-check2-circle"></i> Delivered</button>
+            }
+            @if (OrderWorkflow.CanReturn(o.Status))
+            {
+                <button type="button" class="btn btn-red-soft" data-bs-toggle="modal" data-bs-target="#returnModal" data-fill="@fill"><i class="bi bi-arrow-counterclockwise"></i> Return</button>
+            }
+            @if (OrderWorkflow.CanDelete(o.Status))
+            {
+                <form method="post" asp-action="Delete" asp-route-id="@o.Id" data-confirm="Delete order @o.OrderNo? This can't be undone." data-confirm-text="Delete" data-confirm-style="btn-danger">
+                    <button type="submit" class="btn btn-ghost text-danger" aria-label="Delete order"><i class="bi bi-trash"></i></button>
+                </form>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-danger d-flex gap-2"><i class="bi bi-arrow-counterclockwise mt-1"></i><div><b>Returned</b> on @Fmt.DateTime(o.ReturnedAt). Reason: @o.ReturnReason. The product was moved to <a asp-controller="Stock" asp-action="Index" asp-route-tab="Returned">stock</a>.</div></div>
+}
+
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="card-x">
+            <div class="card-x-body text-center">
+                @if (!string.IsNullOrEmpty(o.ProductImage))
+                {
+                    <a href="@o.ProductImage" target="_blank" rel="noopener"><img class="thumb thumb-lg mx-auto" src="@o.ProductImage" alt="@o.ProductName" /></a>
+                }
+                else
+                {
+                    <div class="thumb mx-auto" style="width:120px;height:120px;font-size:2rem"><i class="bi bi-image"></i></div><div class="text-muted small mt-2">No picture</div>
+                }
+                <dl class="dl-x text-start mt-3">
+                    <dt>Size</dt><dd>@(o.ProductSize ?? "—")</dd>
+                    <dt>Batch</dt><dd>@if (o.BatchId is not null) { <a asp-controller="Batches" asp-action="Details" asp-route-id="@o.BatchId">@o.BatchNo</a> } else { <span class="text-muted">Not assigned</span> }</dd>
+                    <dt>Link</dt><dd>@if (productLink is not null) { <a href="@productLink" target="_blank" rel="noopener noreferrer nofollow">Open product <i class="bi bi-box-arrow-up-right small"></i></a> } else { <span>—</span> }</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card-x mb-3">
+            <div class="card-x-header"><h2 class="card-x-title">Customer</h2><a class="small" asp-controller="Customers" asp-action="Details" asp-route-id="@o.CustomerId">History</a></div>
+            <div class="card-x-body">
+                <div class="fw-600">@o.CustomerName</div>
+                <div class="d-flex gap-2 mt-2 flex-wrap">
+                    <a class="btn btn-soft btn-sm" href="@Fmt.Tel(o.Mobile)"><i class="bi bi-telephone"></i> @o.Mobile</a>
+                    @if (social is not null)
+                    {
+                        <a class="btn btn-light-ghost btn-sm" href="@social" target="_blank" rel="noopener noreferrer nofollow"><i class="bi bi-chat-dots"></i> Social profile</a>
+                    }
+                </div>
+                <div class="small-caps mt-3 mb-1">Delivery address</div>
+                <div class="text-2">@(o.DeliveryAddress ?? "—")</div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(o.TrackingToken))
+        {
+            <div class="card-x mb-3 track-share">
+                <div class="card-x-header">
+                    <h2 class="card-x-title"><i class="bi bi-link-45deg"></i> Customer link</h2>
+                    <a class="small" href="@trackUrl" target="_blank" rel="noopener">Preview <i class="bi bi-box-arrow-up-right"></i></a>
+                </div>
+                <div class="card-x-body">
+                    <p class="small text-2 mb-2">Send this link – the customer sees the status and price of this order. No login needed; they can't change anything.</p>
+                    <div class="link-box">
+                        <input class="form-control form-control-sm" value="@trackUrl" readonly aria-label="Customer link" data-select-on-focus />
+                        <button type="button" class="btn btn-light-ghost btn-sm" data-copy="@trackUrl"><i class="bi bi-copy"></i> Copy</button>
+                    </div>
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                        <a class="btn btn-whatsapp btn-sm flex-fill" href="@TrackingLinks.WhatsApp(o.Mobile, trackMessage)" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> Send on WhatsApp</a>
+                        <button type="button" class="btn btn-soft btn-sm flex-fill" data-share-text="@trackMessage" data-share-title="Order @o.OrderNo" hidden><i class="bi bi-share"></i> Share…</button>
+                    </div>
+                    <form method="post" asp-action="ResetTrackingLink" asp-route-id="@o.Id" class="mt-2"
+                          data-confirm="Create a new link? The link you sent before will stop working." data-confirm-text="Create new link">
+                        <button type="submit" class="btn btn-link btn-sm p-0 text-muted small"><i class="bi bi-arrow-repeat"></i> Replace with a new link</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="card-x">
+            <div class="card-x-header"><h2 class="card-x-title">Money</h2></div>
+            <div class="card-x-body money-rows">
+                <div class="mr"><span>Purchase price</span><span class="v">@Money.Buy(o.PurchasePriceSgd)@(o.ExchangeRate is { } r ? $" × {Fmt.Rate(r)}" : "")</span></div>
+                <div class="mr"><span>Cost in @Money.SaleCode</span><span class="v">@Money.Sale(o.ProductPriceBdt)</span></div>
+                <div class="mr"><span>Selling price</span><span class="v">@Money.Sale(o.SellingPrice)</span></div>
+                <div class="mr"><span>Advance received</span><span class="v">@Money.Sale(o.AdvanceAmount)</span></div>
+                @if (o.Status is OrderStatus.Delivered or OrderStatus.Returned && o.CollectedAmount > 0)
+                {
+                    <div class="mr"><span>Collected on delivery</span><span class="v">@Money.Sale(o.CollectedAmount)</span></div>
+                }
+                @if (o.RefundAmount > 0)
+                {
+                    <div class="mr"><span>Refunded</span><span class="v neg">− @Money.Sale(o.RefundAmount)</span></div>
+                }
+                @if (o.Status is OrderStatus.PreOrder or OrderStatus.OutForDelivery)
+                {
+                    <div class="mr total"><span>Due</span><span class="v" style="color:var(--amber)">@Money.Sale(o.DueAmount)</span></div>
+                }
+                <div class="mr @(o.Status is OrderStatus.PreOrder or OrderStatus.OutForDelivery ? "" : "total")"><span>Profit</span><span class="v @(o.Profit < 0 ? "neg" : "pos")">@Money.Sale(o.Profit)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card-x">
+            <div class="card-x-header"><h2 class="card-x-title">Timeline</h2></div>
+            <div class="card-x-body">
+                <ul class="timeline">
+                    @foreach (var h in Model.History)
+                    {
+                        <li>
+                            <span class="dot @Fmt.StatusClass(h.ToStatus)"></span>
+                            <div class="t-title">@h.ToStatus.ToText()</div>
+                            @if (!string.IsNullOrEmpty(h.Remarks)) { <div class="small text-2">@h.Remarks</div> }
+                            <div class="t-meta">@Fmt.DateTime(h.ChangedAt) · @(h.ChangedByName ?? "System")</div>
+                        </li>
+                    }
+                </ul>
+                @if (!string.IsNullOrEmpty(o.Notes))
+                {
+                    <div class="small-caps mb-1 mt-2">Notes</div>
+                    <div class="text-2 small">@o.Notes</div>
+                }
+                <div class="text-muted small mt-3">Created by @(o.CreatedByName ?? "—") on @Fmt.DateTime(o.CreatedAt)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_OrderModals" />

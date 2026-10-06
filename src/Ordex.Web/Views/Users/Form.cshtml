@@ -1,0 +1,70 @@
+@model UserInput
+@{
+    ViewData["Title"] = Model.Id == 0 ? "New user" : "Edit user";
+    ViewData["Back"] = Url.Action("Index");
+    var roles = CurrentUser.IsSuperAdmin
+        ? new[] { UserRole.SuperAdmin, UserRole.Admin, UserRole.Staff }
+        : new[] { UserRole.Admin, UserRole.Staff };
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-6">
+    <div class="page-head d-none d-lg-flex"><div><h1>@ViewData["Title"]</h1></div></div>
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? null : Model.Id)" novalidate>
+        <section class="form-section">
+            <div class="form-section-title"><i class="bi bi-person"></i> Account</div>
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label asp-for="FullName" class="form-label"></label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label asp-for="UserName" class="form-label"></label>
+                    <input asp-for="UserName" class="form-control" autocapitalize="none" spellcheck="false" autocomplete="off" />
+                    <span asp-validation-for="UserName"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="Phone" class="form-label"></label>
+                    <input asp-for="Phone" class="form-control" type="tel" />
+                    <span asp-validation-for="Phone"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" type="email" />
+                    <span asp-validation-for="Email"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Password" class="form-label">@(Model.Id == 0 ? "Password" : "New password")</label>
+                    <input asp-for="Password" class="form-control" autocomplete="new-password" placeholder="@(Model.Id == 0 ? "At least 6 characters" : "Leave empty to keep the current password")" />
+                    <span asp-validation-for="Password"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="form-section-title"><i class="bi bi-shield-check"></i> Access</div>
+            <div class="mb-3">
+                <label asp-for="Role" class="form-label"></label>
+                <select asp-for="Role" class="form-select" data-toggle-target="#scopeWrap" data-hide-value="SuperAdmin">
+                    @foreach (var r in roles) { <option value="@r">@r.ToText()</option> }
+                </select>
+                <div class="form-hint">Super Admin sees every company. Admin manages one company. Staff works in one business unit.</div>
+            </div>
+            <div id="scopeWrap">
+                @await Component.InvokeAsync("ScopeFields", new { companyId = (int?)Model.CompanyId, businessUnitId = (int?)Model.BusinessUnitId, allowAllUnits = true })
+            </div>
+            <div class="form-check form-switch mt-2">
+                <input asp-for="IsActive" class="form-check-input" role="switch" />
+                <label asp-for="IsActive" class="form-check-label">Active (can sign in)</label>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save user</button>
+        </div>
+    </form>
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

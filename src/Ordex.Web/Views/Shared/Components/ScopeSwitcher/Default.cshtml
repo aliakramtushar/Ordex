@@ -1,0 +1,101 @@
+@model Ordex.Web.ViewComponents.ScopeSwitcherModel
+@*
+    Company / business unit switcher.
+    desktop = two compact fields inside the top bar (change = apply at once)
+    sheet   = stacked form inside the mobile bottom sheet (Apply button)
+*@
+@if (Model.Variant == "sheet")
+{
+    <form method="post" asp-controller="Scope" asp-action="Set" class="d-grid gap-3">
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+        <div>
+            <label class="form-label" for="scopeCompanySheet">Company</label>
+            @if (Model.CanPickCompany)
+            {
+                <select class="form-select" id="scopeCompanySheet" name="companyId">
+                    <option value="0">All companies</option>
+                    @foreach (var c in Model.Companies)
+                    {
+                        <option value="@c.Id" selected="@(c.Id == Model.CompanyId)">@c.Text</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <div class="form-control d-flex align-items-center gap-2" aria-readonly="true"><i class="bi bi-buildings text-muted"></i>@Model.CompanyName</div>
+            }
+        </div>
+        <div>
+            <label class="form-label" for="scopeUnitSheet">Business unit</label>
+            @if (Model.CanPickUnit)
+            {
+                <select class="form-select" id="scopeUnitSheet" name="businessUnitId"
+                        data-source="/lookup/business-units" data-depends-on="#scopeCompanySheet" data-param="companyId" data-placeholder="All business units">
+                    <option value="0">All business units</option>
+                    @foreach (var u in Model.BusinessUnits)
+                    {
+                        <option value="@u.Id" selected="@(u.Id == Model.BusinessUnitId)">@u.Text</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <div class="form-control d-flex align-items-center gap-2" aria-readonly="true"><i class="bi bi-diagram-3 text-muted"></i>@Model.UnitName</div>
+            }
+        </div>
+        @if (Model.IsInteractive)
+        {
+            <button type="submit" class="btn btn-primary btn-lg" data-busy-text="Switching…"><i class="bi bi-check2"></i> Show this data</button>
+        }
+    </form>
+}
+else
+{
+    <form method="post" asp-controller="Scope" asp-action="Set" class="scope-switch" data-scope-switch aria-label="Company and business unit">
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+        <div class="scope-field @(Model.CanPickCompany ? "" : "static")">
+            <span class="scope-ico"><i class="bi bi-buildings"></i></span>
+            <span class="scope-text">
+                <label class="scope-label" for="scopeCompany">Company</label>
+                @if (Model.CanPickCompany)
+                {
+                    <select id="scopeCompany" name="companyId" class="scope-select" data-scope-company>
+                        <option value="0">All companies</option>
+                        @foreach (var c in Model.Companies)
+                        {
+                            <option value="@c.Id" selected="@(c.Id == Model.CompanyId)">@c.Text</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <span class="scope-value" id="scopeCompany">@Model.CompanyName</span>
+                }
+            </span>
+        </div>
+
+        <span class="scope-sep" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+
+        <div class="scope-field @(Model.CanPickUnit && Model.CompanyId != 0 ? "" : "static")">
+            <span class="scope-ico unit"><i class="bi bi-diagram-3"></i></span>
+            <span class="scope-text">
+                <label class="scope-label" for="scopeUnit">Business unit</label>
+                @if (Model.CanPickUnit && Model.CompanyId != 0)
+                {
+                    <select id="scopeUnit" name="businessUnitId" class="scope-select" data-scope-unit>
+                        <option value="0">All business units</option>
+                        @foreach (var u in Model.BusinessUnits)
+                        {
+                            <option value="@u.Id" selected="@(u.Id == Model.BusinessUnitId)">@u.Text</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <span class="scope-value" id="scopeUnit" title="@(Model.CanPickUnit ? "Pick a company first" : null)">@Model.UnitName</span>
+                }
+            </span>
+        </div>
+    </form>
+}

@@ -1,0 +1,79 @@
+@model string
+@*
+    One menu definition, rendered two ways:
+    "side"  = desktop sidebar list,  "sheet" = mobile bottom-sheet tiles.
+*@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+
+    var groups = new List<(string Label, List<(string Text, string Icon, string Controller, string Action)> Items)>
+    {
+        ("Operations", new()
+        {
+            ("Dashboard", "bi-grid-1x2", "Dashboard", "Index"),
+            ("Orders", "bi-bag", "Orders", "Index"),
+            ("Stock", "bi-box-seam", "Stock", "Index"),
+            ("Purchase batches", "bi-airplane", "Batches", "Index"),
+            ("Expenses", "bi-wallet2", "Expenses", "Index"),
+            ("Customers", "bi-people", "Customers", "Index")
+        }),
+        ("Finance", new()
+        {
+            ("Profit & loss", "bi-graph-up-arrow", "Reports", "ProfitLoss"),
+            ("Supplier payable", "bi-currency-exchange", "Reports", "Payable")
+        })
+    };
+
+    if (CurrentUser.IsAdmin)
+    {
+        var admin = new List<(string, string, string, string)>();
+        if (CurrentUser.IsSuperAdmin) admin.Add(("Companies", "bi-buildings", "Companies", "Index"));
+        else admin.Add(("Company profile", "bi-building", "Companies", "Profile"));
+        admin.Add((CurrentUser.BusinessUnitId == 0 ? "Business units" : "Business unit", "bi-diagram-3", "BusinessUnits", "Index"));
+        admin.Add(("Users", "bi-person-gear", "Users", "Index"));
+        admin.Add(("Expense categories", "bi-tags", "Expenses", "Categories"));
+        groups.Add(("Administration", admin));
+    }
+
+    bool IsActive(string c, string a) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase) &&
+        (c != "Reports" && c != "Expenses" || string.Equals(action, a, StringComparison.OrdinalIgnoreCase)
+            || (c == "Expenses" && a == "Index" && !string.Equals(action, "Categories", StringComparison.OrdinalIgnoreCase)));
+}
+
+@if (Model == "sheet")
+{
+    foreach (var group in groups)
+    {
+        <div class="small-caps mt-3 mb-2">@group.Label</div>
+        <div class="sheet-grid">
+            @foreach (var item in group.Items)
+            {
+                <a class="sheet-tile @(IsActive(item.Controller, item.Action) ? "active" : "")" asp-controller="@item.Controller" asp-action="@item.Action">
+                    <i class="bi @item.Icon"></i>@item.Text
+                </a>
+            }
+        </div>
+    }
+    <div class="divider"></div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-light-ghost flex-fill" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key"></i> Password</a>
+        <form method="post" asp-controller="Account" asp-action="Logout" class="flex-fill d-flex">
+            <button type="submit" class="btn btn-red-soft flex-fill"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+        </form>
+    </div>
+}
+else
+{
+    foreach (var group in groups)
+    {
+        <div class="nav-label">@group.Label</div>
+        foreach (var item in group.Items)
+        {
+            <a class="side-link @(IsActive(item.Controller, item.Action) ? "active" : "")" asp-controller="@item.Controller" asp-action="@item.Action">
+                <i class="bi @item.Icon"></i>@item.Text
+            </a>
+        }
+    }
+}

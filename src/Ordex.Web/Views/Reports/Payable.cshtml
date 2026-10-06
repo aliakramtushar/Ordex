@@ -1,0 +1,87 @@
+@model PayableReport
+@{
+    ViewData["Title"] = "Supplier payable";
+    var maxSgd = Model.Months.Count == 0 ? 1 : Math.Max(1, Model.Months.Max(m => m.TotalSgd));
+    var unpaidSgd = Model.Months.Sum(m => m.UnpaidSgd);
+    var unpaidBdt = Model.Months.Sum(m => m.UnpaidBdt);
+}
+
+<div class="page-head">
+    <div>
+        <h1>@Money.BuyCode payable · @Model.Year</h1>
+        <div class="sub">What we bought each month and what is still to pay</div>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-light-ghost btn-icon" asp-action="Payable" asp-route-year="@(Model.Year - 1)" aria-label="Previous year"><i class="bi bi-chevron-left"></i></a>
+        <a class="btn btn-light-ghost btn-icon" asp-action="Payable" asp-route-year="@(Model.Year + 1)" aria-label="Next year"><i class="bi bi-chevron-right"></i></a>
+        <button type="button" class="btn btn-light-ghost" data-print><i class="bi bi-printer"></i></button>
+    </div>
+</div>
+
+<div class="kpi-grid mb-3">
+    <div class="kpi accent"><div class="kpi-label"><i class="bi bi-hourglass"></i> Unpaid</div><div class="kpi-value">@Money.Buy(unpaidSgd)</div><div class="kpi-sub">≈ @Money.Sale(unpaidBdt)</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-currency-exchange"></i> Bought this year</div><div class="kpi-value">@Money.Buy(Model.Months.Sum(m => m.TotalSgd))</div><div class="kpi-sub">≈ @Money.Sale(Model.Months.Sum(m => m.PayableBdt))</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-check2-circle"></i> Paid</div><div class="kpi-value">@Money.Buy(Model.Months.Sum(m => m.PaidSgd))</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-airplane"></i> Batches</div><div class="kpi-value">@Model.Months.Sum(m => m.BatchCount)</div></div>
+</div>
+
+@if (Model.Unassigned.OrderCount > 0)
+{
+    <div class="alert alert-warning d-flex gap-2 align-items-start">
+        <i class="bi bi-exclamation-triangle mt-1"></i>
+        <div><b>@Model.Unassigned.OrderCount orders (@Money.Buy(Model.Unassigned.TotalSgd))</b> are not in any batch yet, so they are not counted here.
+            Assign a batch on those orders when you buy them.</div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-12 col-lg-6">
+        <div class="card-x">
+            <div class="card-x-header"><h2 class="card-x-title">By month</h2></div>
+            <div class="card-x-body">
+                @foreach (var m in Model.Months)
+                {
+                    <div class="mb-3 @(m.BatchCount == 0 ? "opacity-50" : "")">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="fw-500">@Fmt.Month(m.MonthStart)</span>
+                            <span class="num">@Money.Buy(m.TotalSgd) <span class="text-muted">≈ @Money.Sale(m.PayableBdt)</span></span>
+                        </div>
+                        <div class="bar-track"><div class="bar-fill" style="width:@((int)Math.Round(m.TotalSgd / maxSgd * 100))%"></div></div>
+                        @if (m.UnpaidSgd > 0) { <div class="small mt-1" style="color:var(--amber)">Unpaid @Money.Buy(m.UnpaidSgd)</div> }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="card-x">
+            <div class="card-x-header"><h2 class="card-x-title">Batches</h2><a class="small" asp-controller="Batches" asp-action="Create"><i class="bi bi-plus"></i> New batch</a></div>
+            @if (Model.Batches.Count == 0)
+            {
+                <div class="card-x-body text-muted small">No batches in @Model.Year.</div>
+            }
+            @foreach (var b in Model.Batches)
+            {
+                <div class="list-row">
+                    <span class="icon-circle @(b.IsPaid ? "green" : "amber")"><i class="bi @(b.IsPaid ? "bi-check2" : "bi-hourglass")"></i></span>
+                    <a class="grow" asp-controller="Batches" asp-action="Details" asp-route-id="@b.BatchId" style="color:inherit">
+                        <div class="title">@b.BatchNo</div>
+                        <div class="meta">@Fmt.Date(b.BatchDate) · rate @Fmt.Rate(b.ExchangeRate)@(b.IsPaid ? $" · paid {Fmt.Date(b.PaidDate)}" : "")</div>
+                    </a>
+                    <div class="text-end">
+                        <div class="amount">@Money.Buy(b.TotalSgd)</div>
+                        <div class="meta num">@Money.Sale(b.PayableBdt)</div>
+                    </div>
+                    @if (!b.IsPaid)
+                    {
+                        <form method="post" asp-controller="Batches" asp-action="SetPaid" asp-route-id="@b.BatchId" data-confirm="Mark @b.BatchNo (@Money.Buy(b.TotalSgd)) as paid?">
+                            <input type="hidden" name="isPaid" value="true" />
+                            <input type="hidden" name="returnUrl" value="@Url.Action("Payable", new { year = Model.Year })" />
+                            <button type="submit" class="btn btn-soft btn-sm">Paid</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,9 @@
+@model Ordex.Web.ViewComponents.CategorySelectModel
+<select class="form-select" id="CategoryId" name="CategoryId" required data-val="true" data-val-required="Please select a category.">
+    <option value="">Select category</option>
+    @foreach (var c in Model.Categories)
+    {
+        <option value="@c.Id" selected="@(c.Id == Model.Selected)">@c.Text</option>
+    }
+</select>
+<span class="field-validation-valid text-danger" data-valmsg-for="CategoryId" data-valmsg-replace="true"></span>

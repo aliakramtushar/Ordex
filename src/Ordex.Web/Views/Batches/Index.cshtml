@@ -1,0 +1,56 @@
+@model BatchIndexViewModel
+@{
+    ViewData["Title"] = "Purchase batches";
+    var f = Model.Filter;
+    string ListUrl(bool? paid, int page = 1) => Url.Action("Index", new { isPaid = paid, search = f.Search, page = page > 1 ? page : (int?)null })!;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Purchase batches</h1>
+        <div class="sub">Each buying trip with its @Money.BuyCode → @Money.SaleCode rate</div>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> New batch</a>
+    </div>
+</div>
+
+<nav class="tabs-scroll" aria-label="Payment status">
+    <a class="tab-pill @(f.IsPaid is null ? "active" : "")" href="@ListUrl(null)">All</a>
+    <a class="tab-pill @(f.IsPaid == false ? "active" : "")" href="@ListUrl(false)">Unpaid</a>
+    <a class="tab-pill @(f.IsPaid == true ? "active" : "")" href="@ListUrl(true)">Paid</a>
+</nav>
+
+<form method="get" class="toolbar" role="search">
+    @if (f.IsPaid is not null) { <input type="hidden" name="isPaid" value="@f.IsPaid.ToString()!.ToLowerInvariant()" /> }
+    <div class="search">
+        <i class="bi bi-search"></i>
+        <input type="search" name="search" value="@f.Search" class="form-control" placeholder="Batch no or note" aria-label="Search batches" />
+    </div>
+    <button class="btn btn-primary" type="submit" aria-label="Search"><i class="bi bi-arrow-right"></i></button>
+</form>
+
+@if (Model.Result.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-airplane", "No batches yet", "Create a batch for each buying trip, with that day's exchange rate."))" />
+}
+else
+{
+    <div class="list-card">
+        @foreach (var b in Model.Result.Items)
+        {
+            <a class="list-row" asp-action="Details" asp-route-id="@b.BatchId">
+                <span class="icon-circle @(b.IsPaid ? "green" : "amber")"><i class="bi @(b.IsPaid ? "bi-check2" : "bi-airplane")"></i></span>
+                <div class="grow">
+                    <div class="title">@b.BatchNo</div>
+                    <div class="meta">@Fmt.Date(b.BatchDate) · Rate @Fmt.Rate(b.ExchangeRate) · @b.OrderCount orders@(b.ExtraCount > 0 ? $" + {b.ExtraCount} extra" : "")@(CurrentUser.BusinessUnitId == 0 && b.BusinessUnitName is not null ? $" · {b.BusinessUnitName}" : "")</div>
+                </div>
+                <div class="text-end">
+                    <div class="amount">@Money.Buy(b.TotalSgd)</div>
+                    <div class="meta num">≈ @Money.Sale(b.PayableBdt)</div>
+                </div>
+            </a>
+        }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Result, p => ListUrl(f.IsPaid, p))" />
+}

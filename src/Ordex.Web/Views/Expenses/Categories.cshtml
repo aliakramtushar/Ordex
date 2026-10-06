@@ -1,0 +1,48 @@
+@model CategoriesViewModel
+@{
+    ViewData["Title"] = "Expense categories";
+    ViewData["Back"] = Url.Action("Index");
+}
+<div class="page-head">
+    <div><h1>Expense categories</h1><div class="sub">Shared categories are available to every company.</div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-5 order-lg-2">
+        <form method="post" asp-action="SaveCategory" class="form-section" novalidate>
+            <div class="form-section-title"><i class="bi bi-plus-circle"></i> Add category</div>
+            <input type="hidden" name="Id" value="0" />
+            <input type="hidden" name="IsActive" value="true" />
+            <label class="form-label" for="newCategory">Name</label>
+            <div class="d-flex gap-2">
+                <input class="form-control" id="newCategory" name="CategoryName" maxlength="100" required placeholder="e.g. Photography" />
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+            @if (CurrentUser.IsSuperAdmin) { <div class="form-hint">As Super Admin, new categories are shared with all companies.</div> }
+        </form>
+    </div>
+    <div class="col-12 col-lg-7">
+        <div class="list-card">
+            @foreach (var c in Model.Categories)
+            {
+                var canEdit = CurrentUser.IsSuperAdmin || c.CompanyId == CurrentUser.CompanyId;
+                <div class="list-row">
+                    <span class="icon-circle @(c.IsActive ? "primary" : "")"><i class="bi bi-tag"></i></span>
+                    <div class="grow">
+                        <div class="title">@c.CategoryName</div>
+                        <div class="meta">@(c.IsShared ? "Shared" : "Your company")@(c.IsActive ? "" : " · Inactive")</div>
+                    </div>
+                    @if (canEdit)
+                    {
+                        <form method="post" asp-action="SaveCategory">
+                            <input type="hidden" name="Id" value="@c.Id" />
+                            <input type="hidden" name="CategoryName" value="@c.CategoryName" />
+                            <input type="hidden" name="IsActive" value="@((!c.IsActive).ToString().ToLowerInvariant())" />
+                            <button type="submit" class="btn btn-light-ghost btn-sm">@(c.IsActive ? "Deactivate" : "Activate")</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,82 @@
+@model ExpenseIndexViewModel
+@{
+    ViewData["Title"] = "Expenses";
+    var f = Model.Filter;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    string PageUrl(int page) => Url.Action("Index", new
+    {
+        search = f.Search, categoryId = f.CategoryId,
+        fromDate = f.FromDate?.ToString("yyyy-MM-dd"), toDate = f.ToDate?.ToString("yyyy-MM-dd"),
+        page = page > 1 ? page : (int?)null
+    })!;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Expenses</h1>
+        <div class="sub">Total for this view: <b class="num">@Money.Sale(Model.TotalAmount)</b></div>
+    </div>
+    <div class="page-actions">
+        @if (CurrentUser.IsAdmin) { <a class="btn btn-light-ghost" asp-action="Categories"><i class="bi bi-tags"></i><span class="d-none d-sm-inline">Categories</span></a> }
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Add expense</a>
+    </div>
+</div>
+
+<form method="get" class="filter-panel" role="search">
+    <div class="row g-2">
+        <div class="col-12 col-md-4">
+            <label class="form-label" for="search">Search</label>
+            <input type="search" id="search" name="search" value="@f.Search" class="form-control" placeholder="Description or category" />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label" for="categoryId">Category</label>
+            <select class="form-select" id="categoryId" name="categoryId" data-autosubmit>
+                <option value="">All categories</option>
+                @foreach (var c in Model.Categories) { <option value="@c.Id" selected="@(c.Id == f.CategoryId)">@c.Text</option> }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="fromDate">From</label>
+            <input type="date" class="form-control" id="fromDate" name="fromDate" value="@Fmt.InputDate(f.FromDate)" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="toDate">To</label>
+            <input type="date" class="form-control" id="toDate" name="toDate" value="@Fmt.InputDate(f.ToDate)" />
+        </div>
+        <div class="col-12 col-md-1 d-flex align-items-end">
+            <button class="btn btn-primary w-100" type="submit" aria-label="Apply filters"><i class="bi bi-funnel"></i></button>
+        </div>
+    </div>
+</form>
+
+@if (Model.Result.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-wallet2", "No expenses", "Record cargo, courier, packaging and other costs here."))" />
+}
+else
+{
+    <div class="list-card">
+        @foreach (var e in Model.Result.Items)
+        {
+            <div class="list-row">
+                <span class="icon-circle"><i class="bi bi-receipt"></i></span>
+                <div class="grow">
+                    <div class="title">@e.CategoryName</div>
+                    <div class="meta text-truncate">@Fmt.Date(e.ExpenseDate)@(e.BatchNo is null ? "" : $" · {e.BatchNo}")@(string.IsNullOrEmpty(e.Description) ? "" : $" · {e.Description}")</div>
+                </div>
+                <div class="amount">@Money.Sale(e.Amount)</div>
+                <div class="dropdown">
+                    <button class="btn btn-ghost btn-icon btn-sm" type="button" data-bs-toggle="dropdown" aria-label="Actions"><i class="bi bi-three-dots-vertical"></i></button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <a class="dropdown-item" asp-action="Edit" asp-route-id="@e.Id"><i class="bi bi-pencil"></i> Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@e.Id" data-confirm="Delete this expense of @Money.Sale(e.Amount)?" data-confirm-text="Delete" data-confirm-style="btn-danger">
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash"></i> Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Result, PageUrl)" />
+}

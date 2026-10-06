@@ -1,0 +1,9 @@
+@model string?
+@if (!string.IsNullOrEmpty(Model))
+{
+    <img class="thumb" src="@Model" alt="" loading="lazy" />
+}
+else
+{
+    <span class="thumb"><i class="bi bi-image"></i></span>
+}

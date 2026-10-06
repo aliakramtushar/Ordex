@@ -1,0 +1,18 @@
+@* Stand-alone layout for the customer's tracking page: no app menus, no sign-in, light and fast on any phone. *@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1f3d" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>@(ViewData["Title"] ?? "Order status")</title>
+    <link rel="icon" href="~/img/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/track.css" asp-append-version="true" />
+</head>
+<body>
+    @RenderBody()
+</body>
+</html>

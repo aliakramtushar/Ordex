@@ -1,0 +1,159 @@
+@model TrackViewModel
+@{
+    Layout = "_TrackLayout";
+    var o = Model.Result.Order;
+    var m = Model.Money;
+    var shop = string.IsNullOrWhiteSpace(o.BusinessUnitName) || string.Equals(o.BusinessUnitName, o.CompanyName, StringComparison.OrdinalIgnoreCase)
+        ? o.CompanyName
+        : $"{o.BusinessUnitName}";
+    ViewData["Title"] = $"Order {o.OrderNo} · {shop}";
+    var firstName = (o.CustomerName ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "there";
+    var digits = new string((o.Mobile ?? "").Where(char.IsAsciiDigit).ToArray());
+    var maskedMobile = digits.Length > 6 ? $"{digits[..3]}{new string('•', digits.Length - 6)}{digits[^3..]}" : "";
+    var returned = o.Status == OrderStatus.Returned;
+
+    // Steps: placed → on the way → delivered
+    var step = o.Status switch { OrderStatus.PreOrder => 1, OrderStatus.OutForDelivery => 2, OrderStatus.Delivered => 3, _ => 0 };
+    var steps = new[]
+    {
+        (Title: "Order placed", Note: "We're bringing it in for you", When: (DateTime?)o.CreatedAt, Icon: "bi-bag-check"),
+        (Title: "On the way", Note: "With our delivery partner", When: o.DispatchedAt, Icon: "bi-truck"),
+        (Title: "Delivered", Note: "Enjoy your purchase!", When: o.DeliveredAt, Icon: "bi-house-check")
+    };
+
+    var (statusText, statusClass, headline, detail) = o.Status switch
+    {
+        OrderStatus.PreOrder => ("Order confirmed", "pre", "Your order is confirmed",
+            "We're sourcing your product from abroad. We'll send it out as soon as it arrives."),
+        OrderStatus.OutForDelivery => ("Out for delivery", "out", "Your order is on the way",
+            o.Due > 0 ? $"Please keep {m.Sale(o.Due)} ready for the delivery person." : "It's fully paid – nothing to pay on delivery."),
+        OrderStatus.Delivered => ("Delivered", "done", "Delivered – thank you!",
+            $"Your order was delivered on {Fmt.Date(o.DeliveredAt ?? o.OrderDate)}. We hope you love it."),
+        _ => ("Returned", "ret", "This order was returned",
+            $"It was returned on {Fmt.Date(o.ReturnedAt ?? o.OrderDate)}. Please contact us if you have any questions.")
+    };
+    var tel = string.IsNullOrWhiteSpace(o.CompanyPhone) ? null : Fmt.Tel(o.CompanyPhone);
+}
+
+<main class="tk-wrap">
+    <header class="tk-head">
+        <div class="tk-shop">
+            <span class="tk-logo">@Fmt.Initials(shop)</span>
+            <div class="min-w-0">
+                <div class="tk-shop-name">@shop</div>
+                <div class="tk-shop-sub">Order status</div>
+            </div>
+        </div>
+        @if (tel is not null)
+        {
+            <a class="tk-call" href="@tel" aria-label="Call @shop"><i class="bi bi-telephone"></i><span>Call</span></a>
+        }
+    </header>
+
+    <p class="tk-hello">Hi @firstName 👋</p>
+
+    <!-- Status -->
+    <section class="tk-card tk-status @statusClass">
+        <span class="tk-pill @statusClass"><span class="dot"></span>@statusText</span>
+        <h1>@headline</h1>
+        <p>@detail</p>
+
+        @if (!returned)
+        {
+            <ol class="tk-steps" aria-label="Order progress">
+                @for (var i = 0; i < steps.Length; i++)
+                {
+                    var s = steps[i];
+                    var state = i + 1 < step ? "done" : i + 1 == step ? "now" : "next";
+                    <li class="@state">
+                        <span class="tk-step-icon"><i class="bi @(state == "done" || (state == "now" && step == 3) ? "bi-check-lg" : s.Icon)"></i></span>
+                        <div class="tk-step-text">
+                            <div class="t">@s.Title</div>
+                            <div class="n">@(state == "next" ? s.Note : s.When is { } w ? Fmt.Date(w) : s.Note)</div>
+                        </div>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+
+    <!-- Product -->
+    <section class="tk-card tk-product">
+        <div class="tk-thumb">
+            @if (!string.IsNullOrEmpty(o.ProductImage))
+            {
+                <img src="@o.ProductImage" alt="@o.ProductName" loading="lazy" />
+            }
+            else
+            {
+                <i class="bi bi-bag"></i>
+            }
+        </div>
+        <div class="min-w-0">
+            <div class="tk-product-name">@o.ProductName</div>
+            @if (!string.IsNullOrWhiteSpace(o.ProductSize)) { <div class="tk-meta">Size: <b>@o.ProductSize</b></div> }
+            <div class="tk-meta">Order <b>@o.OrderNo</b> · @Fmt.Date(o.OrderDate)</div>
+        </div>
+    </section>
+
+    <!-- Payment -->
+    <section class="tk-card">
+        <h2 class="tk-h2"><i class="bi bi-receipt"></i> Payment</h2>
+        <div class="tk-rows">
+            <div class="r"><span>Price</span><b>@m.Sale(o.SellingPrice)</b></div>
+            @if (o.AdvanceAmount > 0) { <div class="r"><span>Advance paid</span><b class="ok">@m.Sale(o.AdvanceAmount)</b></div> }
+            @if (o.CollectedAmount > 0) { <div class="r"><span>Paid on delivery</span><b class="ok">@m.Sale(o.CollectedAmount)</b></div> }
+            @if (o.RefundAmount > 0) { <div class="r"><span>Refunded to you</span><b>@m.Sale(o.RefundAmount)</b></div> }
+        </div>
+        @if (o.Status is OrderStatus.PreOrder or OrderStatus.OutForDelivery)
+        {
+            <div class="tk-total @(o.Due > 0 ? "due" : "paid")">
+                <span>@(o.Due > 0 ? "To pay on delivery" : "Fully paid")</span>
+                <b>@(o.Due > 0 ? m.Sale(o.Due) : "✓")</b>
+            </div>
+        }
+        else if (o.Status == OrderStatus.Delivered)
+        {
+            <div class="tk-total paid"><span>Total paid</span><b>@m.Sale(o.Paid)</b></div>
+        }
+    </section>
+
+    @if (Model.Result.OtherOrders.Count > 0)
+    {
+        <section class="tk-card">
+            <h2 class="tk-h2"><i class="bi bi-bag"></i> Your other orders</h2>
+            <div class="tk-others">
+                @foreach (var x in Model.Result.OtherOrders)
+                {
+                    var cls = x.Status == OrderStatus.OutForDelivery ? "out" : "pre";
+                    <a class="tk-other" href="/t/@x.TrackingToken">
+                        <span class="tk-thumb sm">
+                            @if (!string.IsNullOrEmpty(x.ProductImage)) { <img src="@x.ProductImage" alt="" loading="lazy" /> } else { <i class="bi bi-bag"></i> }
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="tk-other-name">@x.ProductName@(string.IsNullOrWhiteSpace(x.ProductSize) ? "" : $" · {x.ProductSize}")</span>
+                            <span class="tk-meta">@x.OrderNo · @m.Sale(x.SellingPrice)</span>
+                        </span>
+                        <span class="tk-pill sm @cls"><span class="dot"></span>@(x.Status == OrderStatus.OutForDelivery ? "On the way" : "Confirmed")</span>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
+    <section class="tk-help">
+        <div>
+            <div class="t">Questions about your order?</div>
+            <div class="n">Mention order <b>@o.OrderNo</b> when you contact us.</div>
+        </div>
+        @if (tel is not null)
+        {
+            <a class="tk-btn" href="@tel"><i class="bi bi-telephone"></i> @o.CompanyPhone</a>
+        }
+    </section>
+
+    <footer class="tk-foot">
+        @if (maskedMobile.Length > 0) { <div>Order for @maskedMobile</div> }
+        <div>Updated @Fmt.DateTime(o.DeliveredAt ?? o.ReturnedAt ?? o.DispatchedAt ?? o.CreatedAt) · Tracking by <b>Ordex</b></div>
+    </footer>
+</main>

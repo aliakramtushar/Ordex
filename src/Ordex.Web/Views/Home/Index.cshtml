@@ -1,0 +1,253 @@
+@{
+    Layout = "_PublicLayout";
+    var signedIn = User.Identity?.IsAuthenticated == true;
+}
+
+<div class="pub">
+    <header class="pub-nav">
+        <div class="inner">
+            <a class="brand" href="/"><img src="~/img/favicon.svg" width="32" height="32" alt="" /> Ordex</a>
+            <nav class="links" aria-label="Sections">
+                <a href="#flow">How it works</a>
+                <a href="#currencies">Currencies</a>
+                <a href="#companies">Companies</a>
+                <a href="#features">Features</a>
+            </nav>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Switch light or dark theme"><i class="bi bi-circle-half"></i></button>
+                @if (signedIn)
+                {
+                    <a class="btn btn-primary" asp-controller="Dashboard" asp-action="Index">Open dashboard</a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" href="/login">Sign in</a>
+                }
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ───────── Hero ───────── -->
+        <section class="hero">
+            <div class="wrap hero-grid">
+                <div class="hero-copy">
+                    <p class="hero-kicker"><i class="bi bi-globe-asia-australia"></i> For businesses that buy abroad for their customers</p>
+                    <h1>Take the order here. Buy it abroad. Deliver it to the door.</h1>
+                    <p class="lead">
+                        Ordex runs the whole buy-for-your-customer business: pre-orders, purchase trips,
+                        deliveries, returns and payments, with every cost converted between taka,
+                        US dollars and Singapore dollars at the rate you actually paid.
+                    </p>
+                    <div class="hero-cta">
+                        @if (signedIn)
+                        {
+                            <a class="btn btn-primary btn-lg" asp-controller="Dashboard" asp-action="Index">Open dashboard</a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-primary btn-lg" href="/login">Sign in to Ordex</a>
+                        }
+                        <a class="btn btn-light-ghost btn-lg" href="#flow">See how an order travels</a>
+                    </div>
+                    <ul class="hero-facts">
+                        <li><b>BDT, USD, SGD</b><span>buy in one, sell in another</span></li>
+                        <li><b>Many companies</b><span>switch from the top bar</span></li>
+                        <li><b>Phone ready</b><span>built for work on the move</span></li>
+                    </ul>
+                </div>
+
+                <!-- The characteristic object of this business: an order travelling between two countries -->
+                <div class="hero-visual" aria-hidden="true">
+                    <div class="waybill">
+                        <div class="wb-head">
+                            <span class="wb-no">ORD-2610-0042</span>
+                            <span class="badge-status out"><i class="bi bi-truck"></i> Out for delivery</span>
+                        </div>
+
+                        <div class="wb-route">
+                            <div class="wb-port">
+                                <span class="code">SIN</span>
+                                <span class="city">Singapore</span>
+                                <span class="note">Bought 12 Oct</span>
+                            </div>
+                            <div class="wb-path"><svg viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M4 34 C 40 2, 80 2, 116 34" /></svg><i class="bi bi-airplane-fill"></i></div>
+                            <div class="wb-port end">
+                                <span class="code">DAC</span>
+                                <span class="city">Dhaka</span>
+                                <span class="note">To Mirpur 10</span>
+                            </div>
+                        </div>
+
+                        <div class="wb-item">
+                            <span class="wb-thumb"></span>
+                            <div class="min-w-0">
+                                <div class="wb-name">Linen shirt dress, size M</div>
+                                <div class="wb-sub">Nusrat J. · courier collects the due</div>
+                            </div>
+                        </div>
+
+                        <div class="wb-tear"></div>
+
+                        <dl class="wb-money">
+                            <div><dt>Bought for</dt><dd>S$ 42.90</dd></div>
+                            <div><dt>Rate</dt><dd>× 90.40</dd></div>
+                            <div><dt>Cost</dt><dd>৳ 3,878</dd></div>
+                            <div><dt>Selling price</dt><dd>৳ 5,200</dd></div>
+                            <div><dt>Advance</dt><dd>৳ 1,000</dd></div>
+                            <div><dt>Due on delivery</dt><dd class="due">৳ 4,200</dd></div>
+                        </dl>
+
+                        <ol class="wb-steps">
+                            <li class="done">Pre-order</li>
+                            <li class="done">Bought</li>
+                            <li class="now">On the way</li>
+                            <li>Delivered</li>
+                        </ol>
+                    </div>
+
+                    <div class="wb-float">
+                        <span class="lbl">Profit on this order</span>
+                        <span class="val">৳ 1,322</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────── How an order travels ───────── -->
+        <section class="section" id="flow">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>How an order travels</h2>
+                    <p>Four steps, the same ones you already follow. Ordex just remembers everything along the way.</p>
+                </div>
+                <ol class="route-steps">
+                    <li>
+                        <span class="rs-dot"><i class="bi bi-bag-plus"></i></span>
+                        <h3>Take the pre-order</h3>
+                        <p>Type the customer's mobile number and returning customers fill in by themselves. Add the product photo, size, price and advance.</p>
+                    </li>
+                    <li>
+                        <span class="rs-dot"><i class="bi bi-cart-check"></i></span>
+                        <h3>Buy it abroad</h3>
+                        <p>Group the trip's purchases into a batch with that day's exchange rate. The cost of every product is worked out for you.</p>
+                    </li>
+                    <li>
+                        <span class="rs-dot"><i class="bi bi-luggage"></i></span>
+                        <h3>Bring it home</h3>
+                        <p>Extra items bought to balance the luggage weight go straight into stock, ready to sell.</p>
+                    </li>
+                    <li>
+                        <span class="rs-dot"><i class="bi bi-house-check"></i></span>
+                        <h3>Deliver and collect</h3>
+                        <p>Mark it out for delivery, then delivered with the amount collected. If it comes back, it returns to stock with the reason.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ───────── Currencies ───────── -->
+        <section class="section band" id="currencies">
+            <div class="wrap split">
+                <div>
+                    <h2>Buy in one currency, sell in another</h2>
+                    <p class="text-2">
+                        Each company chooses what it pays suppliers in and what its customers pay. A shop
+                        buying in Singapore and selling in Dhaka works in SGD and BDT; a shop buying in the
+                        US and selling to customers abroad can work in dollars end to end.
+                    </p>
+                    <ul class="check-list">
+                        <li><i class="bi bi-check2"></i><span>Taka, US dollar and Singapore dollar on both sides</span></li>
+                        <li><i class="bi bi-check2"></i><span>Rate saved with every purchase batch, so old orders keep their real cost</span></li>
+                        <li><i class="bi bi-check2"></i><span>What you owe suppliers each month, in their currency, with a Paid tick</span></li>
+                        <li><i class="bi bi-check2"></i><span>Profit after cargo, courier, packaging and other expenses</span></li>
+                    </ul>
+                </div>
+
+                <div class="fx-board" aria-label="Example month">
+                    <div class="fx-title">October, example figures</div>
+                    <div class="fx-row"><span><span class="currency-pair"><b>SGD</b><i class="bi bi-arrow-right"></i><b>BDT</b></span> Singapore desk</span><b>S$ 1,284.50 × 90.40</b></div>
+                    <div class="fx-row"><span><span class="currency-pair"><b>USD</b><i class="bi bi-arrow-right"></i><b>BDT</b></span> US desk</span><b>$ 610.00 × 122.10</b></div>
+                    <div class="fx-sum">
+                        <div class="row-x"><span>Purchases</span><b class="minus">− ৳ 1,90,600</b></div>
+                        <div class="row-x"><span>Collected from customers</span><b>৳ 2,48,300</b></div>
+                        <div class="row-x"><span>Expenses</span><b class="minus">− ৳ 18,250</b></div>
+                        <div class="row-x total"><span>Net profit</span><span>৳ 39,450</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────── Companies & business units ───────── -->
+        <section class="section" id="companies">
+            <div class="wrap split reverse">
+                <div>
+                    <h2>One owner, several companies and desks</h2>
+                    <p class="text-2">
+                        Run more than one company, and split each into business units such as a Singapore
+                        desk, a US desk or a separate Facebook page. The owner switches between them from the
+                        top bar; every other user only ever sees the unit they work in.
+                    </p>
+                    <ul class="check-list">
+                        <li><i class="bi bi-check2"></i><span>Pick a company and unit once, and every list and report follows</span></li>
+                        <li><i class="bi bi-check2"></i><span>Admins manage their own company's units and users</span></li>
+                        <li><i class="bi bi-check2"></i><span>Staff are locked to their unit, even if they change a link</span></li>
+                    </ul>
+                </div>
+
+                <div class="switch-demo" aria-hidden="true">
+                    <div class="sd-bar">
+                        <span class="sd-title">Orders</span>
+                        <span class="sd-switch">
+                            <span class="sd-field"><span class="scope-ico"><i class="bi bi-buildings"></i></span><span><small>Company</small>Bayside Imports</span><i class="bi bi-chevron-down"></i></span>
+                            <i class="bi bi-chevron-right sd-sep"></i>
+                            <span class="sd-field"><span class="scope-ico unit"><i class="bi bi-diagram-3"></i></span><span><small>Business unit</small>Singapore desk</span><i class="bi bi-chevron-down"></i></span>
+                        </span>
+                    </div>
+                    <div class="sd-menu">
+                        <span class="on"><i class="bi bi-check2"></i> Singapore desk</span>
+                        <span>US desk</span>
+                        <span>Kids corner page</span>
+                        <span class="muted">All business units</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────── Everything else ───────── -->
+        <section class="section band" id="features">
+            <div class="wrap">
+                <div class="section-head">
+                    <h2>Everything a paper notebook and three spreadsheets did</h2>
+                </div>
+                <div class="feature-list">
+                    <div class="feature"><i class="bi bi-person-lines-fill"></i><div><h3>Customers remembered</h3><p>Name, social link, address and full order history, found by mobile number.</p></div></div>
+                    <div class="feature"><i class="bi bi-image"></i><div><h3>A photo with every order</h3><p>Taken on the phone and shrunk before upload, so it is quick on mobile data.</p></div></div>
+                    <div class="feature"><i class="bi bi-box-seam"></i><div><h3>Stock that fills itself</h3><p>Returns and extra items land in stock with their cost, and sell from there.</p></div></div>
+                    <div class="feature"><i class="bi bi-receipt"></i><div><h3>Expenses by trip</h3><p>Cargo, courier and packaging, linked to the purchase batch they belong to.</p></div></div>
+                    <div class="feature"><i class="bi bi-graph-up-arrow"></i><div><h3>Profit for any period</h3><p>Collection minus purchases minus expenses, for a month, a quarter or a year.</p></div></div>
+                    <div class="feature"><i class="bi bi-file-earmark-spreadsheet"></i><div><h3>Export to Excel</h3><p>Any filtered order list downloads as a file that opens straight in Excel.</p></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="wrap">
+                <div class="cta-band">
+                    <div>
+                        <h2>Ready to take the next order?</h2>
+                        <p>Sign in with the account your administrator created for you.</p>
+                    </div>
+                    <a class="btn btn-lg" href="@(signedIn ? "/dashboard" : "/login")">@(signedIn ? "Open dashboard" : "Sign in")</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="pub-foot">
+        <div class="wrap inner">
+            <span class="brand" style="font-size:1rem"><img src="~/img/favicon.svg" width="24" height="24" alt="" /> Ordex</span>
+            <span>© @DateTime.Now.Year Ordex. Cross-border purchase and delivery management.</span>
+        </div>
+    </footer>
+</div>

@@ -1,0 +1,66 @@
+@model CompanyProfileInput
+@{
+    ViewData["Title"] = "Company profile";
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-6">
+    <div class="page-head d-none d-lg-flex"><div><h1>Company profile</h1><div class="sub">Your company's details, currencies and default exchange rate.</div></div></div>
+
+    <div class="info-line"><i class="bi bi-info-circle"></i><span>You can update these details. Adding, deleting or switching companies on/off is done by the Super Admin.</span></div>
+
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="Profile" class="form-section" novalidate>
+        <div class="row g-3">
+            <div class="col-12 col-sm-4">
+                <span class="form-label d-block">Code</span>
+                <div class="readonly-field"><i class="bi bi-lock text-muted"></i>@Model.CompanyCode</div>
+                <input type="hidden" asp-for="CompanyCode" />
+            </div>
+            <div class="col-12 col-sm-8">
+                <label asp-for="CompanyName" class="form-label"></label>
+                <input asp-for="CompanyName" class="form-control" />
+                <span asp-validation-for="CompanyName"></span>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label asp-for="Phone" class="form-label"></label>
+                <input asp-for="Phone" class="form-control" type="tel" inputmode="tel" />
+                <span asp-validation-for="Phone"></span>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" type="email" inputmode="email" autocapitalize="none" />
+                <span asp-validation-for="Email"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Address" class="form-label"></label>
+                <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="col-12"><div class="form-section-title mt-2 mb-0"><i class="bi bi-currency-exchange"></i> Currencies</div></div>
+            <div class="col-6">
+                <label asp-for="PurchaseCurrency" class="form-label"></label>
+                <select asp-for="PurchaseCurrency" class="form-select">
+                    @foreach (var c in Currencies.All) { <option value="@c.Code">@c.Code – @c.Name</option> }
+                </select>
+                <div class="form-hint">What you pay abroad in.</div>
+            </div>
+            <div class="col-6">
+                <label asp-for="SalesCurrency" class="form-label"></label>
+                <select asp-for="SalesCurrency" class="form-select">
+                    @foreach (var c in Currencies.All) { <option value="@c.Code">@c.Code – @c.Name</option> }
+                </select>
+                <div class="form-hint">What customers pay you in.</div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label asp-for="DefaultExchangeRate" class="form-label">Default rate (1 purchase = ? sales)</label>
+                <input asp-for="DefaultExchangeRate" class="form-control" type="number" min="0" step="0.0001" inputmode="decimal" />
+                <div class="form-hint">Used for orders that have no batch yet.</div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save changes</button>
+        </div>
+    </form>
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

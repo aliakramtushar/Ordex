@@ -1,0 +1,32 @@
+@model Ordex.Web.ViewComponents.ScopeFieldsModel
+@* Company / business unit pickers – only shown to users who can see more than one. *@
+<div class="row g-3 mb-1">
+    @if (Model.ShowCompany)
+    {
+        <div class="col-12 @(Model.ShowUnit ? "col-md-6" : "")">
+            <label class="form-label" for="CompanyId">Company</label>
+            <select class="form-select" id="CompanyId" name="CompanyId" required>
+                <option value="0">Select company</option>
+                @foreach (var c in Model.Companies)
+                {
+                    <option value="@c.Id" selected="@(c.Id == Model.CompanyId)">@c.Text</option>
+                }
+            </select>
+        </div>
+    }
+    @if (Model.ShowUnit)
+    {
+        var placeholder = Model.AllowAllUnits ? "All business units" : "Select business unit";
+        <div class="col-12 @(Model.ShowCompany ? "col-md-6" : "")">
+            <label class="form-label" for="BusinessUnitId">Business unit</label>
+            <select class="form-select" id="BusinessUnitId" name="BusinessUnitId"
+                    data-source="/lookup/business-units" data-depends-on="#CompanyId" data-param="companyId" data-placeholder="@placeholder">
+                <option value="0">@placeholder</option>
+                @foreach (var u in Model.BusinessUnits)
+                {
+                    <option value="@u.Id" selected="@(u.Id == Model.BusinessUnitId)">@u.Text</option>
+                }
+            </select>
+        </div>
+    }
+</div>

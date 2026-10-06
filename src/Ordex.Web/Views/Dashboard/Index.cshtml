@@ -1,0 +1,162 @@
+@model DashboardViewModel
+@inject Ordex.Core.Abstractions.IClock Clock
+@{
+    ViewData["Title"] = "Dashboard";
+    var k = Model.Data.Kpi;
+    var hour = Clock.Now.Hour;
+    var greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    var firstName = CurrentUser.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+    var trend = Model.Data.Trend.Select(t => new
+    {
+        label = t.MonthStart.ToString("MMM"),
+        collection = t.TotalCollection,
+        purchase = t.TotalPurchaseBdt,
+        profit = t.NetProfit
+    });
+}
+
+<div class="page-head">
+    <div>
+        <h1>@greeting, @firstName</h1>
+        <div class="sub d-flex align-items-center gap-2 flex-wrap">
+            <span>@Fmt.Date(Model.Range.From) – @Fmt.Date(Model.Range.To)</span>
+            @if (!Money.IsMixed)
+            {
+                <span class="currency-pair" title="Buy in @Money.Purchase.Name, sell in @Money.Sales.Name"><b>@Money.BuyCode</b><i class="bi bi-arrow-right"></i><b>@Money.SaleCode</b></span>
+            }
+        </div>
+    </div>
+    <form method="get" class="range-form no-print">
+        <input type="date" name="from" id="from" value="@Fmt.InputDate(Model.Range.From)" class="form-control" aria-label="From date" />
+        <input type="date" name="to" id="to" value="@Fmt.InputDate(Model.Range.To)" class="form-control" aria-label="To date" />
+        <button class="btn btn-light-ghost" type="submit"><i class="bi bi-funnel"></i><span class="d-none d-sm-inline">Apply</span></button>
+    </form>
+</div>
+<div class="tabs-scroll no-print">
+    <a href="#" class="tab-pill" data-range="month" data-from="#from" data-to="#to">This month</a>
+    <a href="#" class="tab-pill" data-range="last-month" data-from="#from" data-to="#to">Last month</a>
+    <a href="#" class="tab-pill" data-range="year" data-from="#from" data-to="#to">This year</a>
+</div>
+
+@if (Money.IsMixed)
+{
+    <div class="alert alert-info small d-flex gap-2 align-items-start mb-3">
+        <i class="bi bi-info-circle"></i>
+        <span>Your companies use different currencies, so totals below are shown without a currency sign. Pick a company in the top bar to see its figures in its own currency.</span>
+    </div>
+}
+
+@if (k.UnpaidSgd > 0)
+{
+    <a class="pay-banner mb-3" asp-controller="Reports" asp-action="Payable">
+        <span class="d-flex align-items-center gap-3 min-w-0">
+            <span class="pb-icon"><i class="bi bi-currency-exchange"></i></span>
+            <span class="min-w-0">
+                <span class="small-caps d-block">@Money.BuyCode to pay suppliers</span>
+                <span class="fw-600 num" style="font-size:1.15rem">@Money.Buy(k.UnpaidSgd)</span>
+                <span class="text-muted small"> ≈ @Money.Sale(k.UnpaidBdt) · @k.UnpaidBatchCount unpaid batch@(k.UnpaidBatchCount == 1 ? "" : "es")</span>
+            </span>
+        </span>
+        <i class="bi bi-chevron-right text-muted"></i>
+    </a>
+}
+
+<!-- Money for the period -->
+<div class="kpi-grid mb-3">
+    <div class="kpi accent">
+        <div class="kpi-label"><i class="bi bi-cash-stack"></i> Collection</div>
+        <div class="kpi-value">@Money.Sale(k.TotalCollection)</div>
+        <div class="kpi-sub">Advance + delivered + stock sales</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><i class="bi bi-airplane"></i> Purchase</div>
+        <div class="kpi-value">@Money.Sale(k.TotalPurchaseBdt)</div>
+        <div class="kpi-sub num">@Money.Buy(k.TotalPurchaseSgd)</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><i class="bi bi-wallet2"></i> Expenses</div>
+        <div class="kpi-value">@Money.Sale(k.Expenses)</div>
+        <div class="kpi-sub">Cargo, courier, packaging…</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><i class="bi bi-graph-up-arrow"></i> Net profit</div>
+        <div class="kpi-value @(k.NetProfit < 0 ? "down" : "up")">@Money.Sale(k.NetProfit)</div>
+        <div class="kpi-sub">Earned on delivered: @Money.Sale(k.EarnedProfit)</div>
+    </div>
+</div>
+
+<!-- Live pipeline -->
+<div class="kpi-grid mb-3">
+    <a class="kpi" asp-controller="Orders" asp-action="Index" asp-route-status="@OrderStatus.PreOrder">
+        <div class="kpi-label"><i class="bi bi-hourglass-split" style="color:var(--blue)"></i> Pre-orders</div>
+        <div class="kpi-value" style="color:var(--text)">@k.PendingCount</div>
+        <div class="kpi-sub">Waiting to go out</div>
+    </a>
+    <a class="kpi" asp-controller="Orders" asp-action="Index" asp-route-status="@OrderStatus.OutForDelivery">
+        <div class="kpi-label"><i class="bi bi-truck" style="color:var(--amber)"></i> Out for delivery</div>
+        <div class="kpi-value" style="color:var(--text)">@k.OutForDeliveryCount</div>
+        <div class="kpi-sub">With the courier</div>
+    </a>
+    <div class="kpi">
+        <div class="kpi-label"><i class="bi bi-hourglass" style="color:var(--amber)"></i> Due to collect</div>
+        <div class="kpi-value">@Money.Sale(k.DueReceivable)</div>
+        <div class="kpi-sub">On open orders</div>
+    </div>
+    <a class="kpi" asp-controller="Stock" asp-action="Index">
+        <div class="kpi-label"><i class="bi bi-box-seam" style="color:var(--primary)"></i> Stock in hand</div>
+        <div class="kpi-value" style="color:var(--text)">@k.StockInHandCount</div>
+        <div class="kpi-sub">Worth @Money.Sale(k.StockInHandValue)</div>
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-xl-7">
+        <div class="card-x h-100">
+            <div class="card-x-header">
+                <h2 class="card-x-title">Last 6 months</h2>
+                <a class="small" asp-controller="Reports" asp-action="ProfitLoss">Profit &amp; loss <i class="bi bi-chevron-right"></i></a>
+            </div>
+            <div class="card-x-body">
+                <div class="chart-box"><canvas id="trendChart" data-symbol="@Money.SaleSymbol" data-code="@Money.SaleCode" aria-label="Collection, purchase and profit for the last six months" role="img"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-5">
+        <div class="card-x h-100">
+            <div class="card-x-header">
+                <h2 class="card-x-title">Latest orders</h2>
+                <a class="small" asp-controller="Orders" asp-action="Index">All orders <i class="bi bi-chevron-right"></i></a>
+            </div>
+            @if (Model.Data.RecentOrders.Count == 0)
+            {
+                <div class="card-x-body">
+                    <partial name="_EmptyState" model="@(("bi-bag", "No orders yet", "Tap + to take your first pre-order."))" />
+                </div>
+            }
+            else
+            {
+                foreach (var o in Model.Data.RecentOrders)
+                {
+                    <a class="list-row" asp-controller="Orders" asp-action="Details" asp-route-id="@o.Id">
+                        <partial name="_Thumb" model="@o.ProductImage" />
+                        <div class="grow">
+                            <div class="title text-truncate">@o.ProductName</div>
+                            <div class="meta text-truncate">@o.CustomerName · @o.OrderNo</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="amount">@Money.Sale(o.SellingPrice)</div>
+                            <partial name="_StatusBadge" model="@o.Status" />
+                        </div>
+                    </a>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="trendData">@Html.Raw(JsonSerializer.Serialize(trend))</script>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

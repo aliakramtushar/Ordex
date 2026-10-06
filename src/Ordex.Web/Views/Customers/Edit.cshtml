@@ -1,0 +1,36 @@
+@model CustomerInput
+@{
+    ViewData["Title"] = "Edit customer";
+    ViewData["Back"] = Url.Action("Details", new { id = Model.Id });
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-5">
+    <div class="page-head d-none d-lg-flex"><div><h1>Edit customer</h1></div></div>
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="Edit" asp-route-id="@Model.Id" class="form-section" novalidate>
+        <div class="mb-3">
+            <label asp-for="CustomerName" class="form-label"></label>
+            <input asp-for="CustomerName" class="form-control" />
+            <span asp-validation-for="CustomerName"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Mobile" class="form-label"></label>
+            <input asp-for="Mobile" class="form-control" type="tel" inputmode="tel" />
+            <span asp-validation-for="Mobile"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="SocialLink" class="form-label"></label>
+            <input asp-for="SocialLink" class="form-control" type="text" inputmode="url" autocapitalize="none" spellcheck="false" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label"></label>
+            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
+        </div>
+    </form>
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

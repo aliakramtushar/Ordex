@@ -1,0 +1,9 @@
+@* Server messages (TempData) are handed to site.js, which shows them as toasts. *@
+@if (TempData[ToastKeys.Success] is string ok)
+{
+    <div hidden data-toast="@ok" data-toast-type="success"></div>
+}
+@if (TempData[ToastKeys.Error] is string err)
+{
+    <div hidden data-toast="@err" data-toast-type="error"></div>
+}

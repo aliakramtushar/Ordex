@@ -1,0 +1,72 @@
+@*
+    Delivered / Return dialogs, shared by every page that shows order cards.
+    The button that opens a dialog fills it through data-fill (see site.js).
+*@
+@{
+    var returnUrl = ViewData["ReturnUrl"] as string ?? Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="modal fade" id="deliverModal" tabindex="-1" aria-labelledby="deliverTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="post" asp-controller="Orders" asp-action="Deliver">
+            <div class="modal-header">
+                <h2 class="modal-title" id="deliverTitle"><i class="bi bi-check2-circle" style="color:var(--green)"></i> Mark as delivered</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-2 mb-3" data-fill-text="label"></p>
+                <input type="hidden" name="OrderId" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <div class="mb-3">
+                    <label class="form-label" for="deliverCollected">Amount collected on delivery</label>
+                    <div class="input-group">
+                        <span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span>
+                        <input class="form-control" id="deliverCollected" name="CollectedAmount" type="number" min="0" step="0.01" inputmode="decimal" required />
+                    </div>
+                    <div class="form-hint">Due on this order: <b data-fill-text="due"></b>. Change it if the customer paid a different amount.</div>
+                </div>
+                <div>
+                    <label class="form-label" for="deliverRemarks">Note <span class="text-muted">(optional)</span></label>
+                    <input class="form-control" id="deliverRemarks" name="Remarks" maxlength="500" placeholder="e.g. Paid by bKash" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-green"><i class="bi bi-check2"></i> Confirm delivered</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="post" asp-controller="Orders" asp-action="Return">
+            <div class="modal-header">
+                <h2 class="modal-title" id="returnTitle"><i class="bi bi-arrow-counterclockwise" style="color:var(--red)"></i> Return order</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-2 mb-3" data-fill-text="label"></p>
+                <input type="hidden" name="OrderId" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <div class="mb-3">
+                    <label class="form-label" for="returnReason">Return reason</label>
+                    <textarea class="form-control" id="returnReason" name="Reason" rows="3" maxlength="500" required placeholder="e.g. Size didn't fit, customer not reachable…"></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" for="returnRefund">Refund to customer</label>
+                    <div class="input-group">
+                        <span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span>
+                        <input class="form-control" id="returnRefund" name="RefundAmount" type="number" min="0" step="0.01" inputmode="decimal" value="0" />
+                    </div>
+                    <div class="form-hint">Received so far: <b data-fill-text="received"></b>. Leave 0 if you keep the advance.</div>
+                </div>
+                <div class="alert alert-info small mb-0 mt-3"><i class="bi bi-box-seam"></i> The product will be added to <b>Stock</b> automatically.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger"><i class="bi bi-arrow-counterclockwise"></i> Confirm return</button>
+            </div>
+        </form>
+    </div>
+</div>

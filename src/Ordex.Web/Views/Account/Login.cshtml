@@ -1,0 +1,73 @@
+@model LoginInput
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Sign in";
+}
+
+<div class="auth">
+    <aside class="auth-side">
+        <span class="ring r1"></span><span class="ring r2"></span>
+        <a class="brand" href="/"><img src="~/img/favicon.svg" width="32" height="32" alt="" /> Ordex</a>
+        <div>
+            <div class="auth-route" aria-hidden="true">
+                <span class="code">SIN</span><span class="line"><i class="bi bi-airplane-fill"></i></span><span class="code">DAC</span>
+            </div>
+            <h2>Every order, from the shop abroad to your customer's door.</h2>
+            <p class="mt-3">Take pre-orders, record what you bought and at what rate, mark deliveries in one tap and see your profit in your own currency.</p>
+        </div>
+        <div class="auth-stat">
+            <div><b>BDT, USD, SGD</b><span>buy and sell currencies</span></div>
+            <div><b>1 tap</b><span>to mark delivered</span></div>
+            <div><b>Automatic</b><span>returns to stock</span></div>
+        </div>
+    </aside>
+
+    <main class="auth-main">
+        <div class="auth-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <a class="brand" href="/"><img src="~/img/favicon.svg" width="32" height="32" alt="" /> Ordex</a>
+                <button type="button" class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Switch light or dark theme"><i class="bi bi-circle-half"></i></button>
+            </div>
+
+            <h1>Welcome back</h1>
+            <p class="sub">Sign in to manage orders, purchases and deliveries.</p>
+
+            <partial name="_FormErrors" />
+
+            <form method="post" asp-controller="Account" asp-action="Login" novalidate>
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <div class="mb-3">
+                    <label asp-for="UserName" class="form-label"></label>
+                    <input asp-for="UserName" class="form-control" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus placeholder="your.username" />
+                    <span asp-validation-for="UserName"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label"></label>
+                    <div class="position-relative">
+                        <input asp-for="Password" class="form-control pe-5" autocomplete="current-password" placeholder="••••••••" />
+                        <button type="button" class="btn btn-ghost btn-icon btn-sm pw-toggle" data-toggle-password="#Password" aria-label="Show or hide password"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <span asp-validation-for="Password"></span>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input asp-for="RememberMe" class="form-check-input" />
+                    <label asp-for="RememberMe" class="form-check-label"></label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100" data-busy-text="Signing in…">Sign in</button>
+            </form>
+
+            <p class="text-muted small text-center mt-4 mb-0">
+                <i class="bi bi-shield-lock"></i> Forgot your password? Ask your administrator to reset it.
+            </p>
+            <p class="text-center mt-2"><a class="link-muted small" href="/"><i class="bi bi-arrow-left"></i> Back to home</a></p>
+        </div>
+    </main>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

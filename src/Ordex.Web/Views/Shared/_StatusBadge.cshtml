@@ -1,0 +1,2 @@
+@model OrderStatus
+<span class="badge-status @Fmt.StatusClass(Model)"><i class="bi @Fmt.StatusIcon(Model)"></i>@Model.ToText()</span>

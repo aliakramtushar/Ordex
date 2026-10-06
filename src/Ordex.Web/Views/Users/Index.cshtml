@@ -1,0 +1,23 @@
+@model UserIndexViewModel
+@{ ViewData["Title"] = "Users"; }
+<div class="page-head">
+    <div><h1>Users</h1><div class="sub">Who can sign in, and what they can see.</div></div>
+    <div class="page-actions"><a class="btn btn-primary" asp-action="Create"><i class="bi bi-person-plus"></i> New user</a></div>
+</div>
+<form method="get" class="toolbar" role="search">
+    <div class="search"><i class="bi bi-search"></i><input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Name, username or phone" aria-label="Search users" /></div>
+    <button class="btn btn-primary" type="submit" aria-label="Search"><i class="bi bi-arrow-right"></i></button>
+</form>
+<div class="list-card">
+    @foreach (var u in Model.Users)
+    {
+        <a class="list-row" asp-action="Edit" asp-route-id="@u.Id">
+            <span class="avatar">@Fmt.Initials(u.FullName)</span>
+            <div class="grow">
+                <div class="title">@u.FullName @if (!u.IsActive) { <span class="badge-soft red ms-1">Inactive</span> }</div>
+                <div class="meta text-truncate">@u.UserName · @(u.CompanyName ?? "All companies") · @(u.BusinessUnitName ?? "All units")</div>
+            </div>
+            <span class="badge-soft @(u.Role == UserRole.SuperAdmin ? "amber" : u.Role == UserRole.Admin ? "green" : "")">@u.Role.ToText()</span>
+        </a>
+    }
+</div>

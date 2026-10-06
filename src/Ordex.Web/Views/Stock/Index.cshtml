@@ -1,0 +1,140 @@
+@model StockIndexViewModel
+@inject Ordex.Core.Abstractions.IClock Clock
+@{
+    ViewData["Title"] = "Stock";
+    var f = Model.Filter;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    string TabUrl(StockTab tab, int page = 1) => Url.Action("Index", new { tab, search = f.Search, page = page > 1 ? page : (int?)null })!;
+
+    var tabs = new (StockTab Tab, string Text, int Count)[]
+    {
+        (StockTab.InStock, "In stock", Model.Counts.InStock),
+        (StockTab.Extra, "Extra items", Model.Counts.Extra),
+        (StockTab.Returned, "Returned", Model.Counts.Returned),
+        (StockTab.Sold, "Sold", Model.Counts.Sold)
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Stock</h1>
+        <div class="sub">@Model.Counts.InStock items in hand · worth @Money.Sale(Model.Counts.InStockValue)</div>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Add extra item</a>
+    </div>
+</div>
+
+<nav class="tabs-scroll" aria-label="Stock type">
+    @foreach (var t in tabs)
+    {
+        <a class="tab-pill @(f.Tab == t.Tab ? "active" : "")" href="@TabUrl(t.Tab)">@t.Text <span class="count">@t.Count</span></a>
+    }
+</nav>
+
+<form method="get" class="toolbar" role="search">
+    <input type="hidden" name="tab" value="@f.Tab" />
+    <div class="search">
+        <i class="bi bi-search"></i>
+        <input type="search" name="search" value="@f.Search" class="form-control" placeholder="Product, reason, order no" aria-label="Search stock" />
+    </div>
+    <button class="btn btn-primary" type="submit" aria-label="Search"><i class="bi bi-arrow-right"></i></button>
+</form>
+
+@if (Model.Result.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-box-seam", "Nothing here", f.Tab == StockTab.Returned ? "Returned orders appear here automatically." : "Extra items you bring to balance the weight go here."))" />
+}
+else
+{
+    <div class="list-card">
+        @foreach (var s in Model.Result.Items)
+        {
+            var link = Fmt.SafeUrl(s.ProductLink);
+            <div class="list-row align-items-start">
+                <partial name="_Thumb" model="@s.ProductImage" />
+                <div class="grow">
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <span class="title">@s.ProductName</span>
+                        @if (s.SourceType == StockSource.Return)
+                        {
+                            <span class="badge-soft red"><i class="bi bi-arrow-counterclockwise"></i> Return</span>
+                        }
+                        else
+                        {
+                            <span class="badge-soft"><i class="bi bi-plus-circle"></i> Extra</span>
+                        }
+                        @if (s.Status == StockStatus.Sold) { <span class="badge-soft green"><i class="bi bi-check2"></i> Sold</span> }
+                    </div>
+                    <div class="meta">
+                        @Fmt.Date(s.EntryDate)
+                        @if (!string.IsNullOrEmpty(s.ProductSize)) { <span> · Size @s.ProductSize</span> }
+                        @if (!string.IsNullOrEmpty(s.BatchNo)) { <span> · <i class="bi bi-airplane"></i> @s.BatchNo</span> }
+                        @if (s.SourceOrderId is not null) { <span> · <a asp-controller="Orders" asp-action="Details" asp-route-id="@s.SourceOrderId">@s.SourceOrderNo</a></span> }
+                        @if (link is not null) { <span> · <a href="@link" target="_blank" rel="noopener noreferrer nofollow">Link</a></span> }
+                    </div>
+                    @if (!string.IsNullOrEmpty(s.ReturnReason)) { <div class="small text-2 mt-1"><i class="bi bi-chat-left-text"></i> @s.ReturnReason</div> }
+                    @if (s.Status == StockStatus.Sold)
+                    {
+                        <div class="small mt-1">Sold @Fmt.Date(s.SoldDate) @(string.IsNullOrEmpty(s.SoldTo) ? "" : $"to {s.SoldTo}") for <b>@Money.Sale(s.SoldPrice)</b></div>
+                    }
+                    else
+                    {
+                        <div class="d-flex gap-2 mt-2 flex-wrap">
+                            <button type="button" class="btn btn-soft btn-sm" data-bs-toggle="modal" data-bs-target="#sellModal"
+                                    data-fill="@JsonSerializer.Serialize(new { Id = s.Id, label = s.ProductName, cost = Money.Sale(s.PriceBdt) })"><i class="bi bi-cash-coin"></i> Mark sold</button>
+                            @if (s.SourceType == StockSource.Extra)
+                            {
+                                <a class="btn btn-light-ghost btn-sm" asp-action="Edit" asp-route-id="@s.Id"><i class="bi bi-pencil"></i> Edit</a>
+                                <form method="post" asp-action="Delete" asp-route-id="@s.Id" data-confirm="Remove @s.ProductName from stock?" data-confirm-text="Remove" data-confirm-style="btn-danger">
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <button type="submit" class="btn btn-ghost btn-sm text-danger" aria-label="Remove"><i class="bi bi-trash"></i></button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="text-end">
+                    <div class="amount">@Money.Sale(s.PriceBdt)</div>
+                    <div class="meta num">@Money.Buy(s.PriceSgd)</div>
+                </div>
+            </div>
+        }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Result, p => TabUrl(f.Tab, p))" />
+}
+
+<!-- Sell dialog -->
+<div class="modal fade" id="sellModal" tabindex="-1" aria-labelledby="sellTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="post" asp-action="Sell">
+            <div class="modal-header">
+                <h2 class="modal-title" id="sellTitle"><i class="bi bi-cash-coin" style="color:var(--primary)"></i> Mark as sold</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-2 mb-3"><span data-fill-text="label"></span> · cost <b data-fill-text="cost"></b></p>
+                <input type="hidden" name="Id" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="sellPrice">Sold price</label>
+                        <div class="input-group"><span class="input-group-text">@(Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol)</span><input class="form-control" id="sellPrice" name="SoldPrice" type="number" min="0.01" step="any" inputmode="decimal" required /></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="sellDate">Date</label>
+                        <input class="form-control" id="sellDate" name="SoldDate" type="date" value="@Fmt.InputDate(Clock.Today)" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="sellTo">Sold to <span class="text-muted">(optional)</span></label>
+                        <input class="form-control" id="sellTo" name="SoldTo" maxlength="150" placeholder="Customer name" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save sale</button>
+            </div>
+        </form>
+    </div>
+</div>

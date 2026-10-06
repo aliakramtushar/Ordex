@@ -1,0 +1,42 @@
+@model CustomerIndexViewModel
+@{
+    ViewData["Title"] = "Customers";
+    var f = Model.Filter;
+    string PageUrl(int page) => Url.Action("Index", new { search = f.Search, page = page > 1 ? page : (int?)null })!;
+}
+<div class="page-head">
+    <div><h1>Customers</h1><div class="sub">Added automatically when you take an order</div></div>
+</div>
+
+<form method="get" class="toolbar" role="search">
+    <div class="search">
+        <i class="bi bi-search"></i>
+        <input type="search" name="search" value="@f.Search" class="form-control" placeholder="Name or mobile" aria-label="Search customers" />
+    </div>
+    <button class="btn btn-primary" type="submit" aria-label="Search"><i class="bi bi-arrow-right"></i></button>
+</form>
+
+@if (Model.Result.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-people", "No customers found", "Customers appear here after their first order."))" />
+}
+else
+{
+    <div class="list-card">
+        @foreach (var c in Model.Result.Items)
+        {
+            <a class="list-row" asp-action="Details" asp-route-id="@c.Id">
+                <span class="avatar">@Fmt.Initials(c.CustomerName)</span>
+                <div class="grow">
+                    <div class="title text-truncate">@c.CustomerName</div>
+                    <div class="meta text-truncate">@c.Mobile@(string.IsNullOrEmpty(c.Address) ? "" : $" · {c.Address}")</div>
+                </div>
+                <div class="text-end">
+                    <div class="amount">@Money.Sale(c.TotalSpent)</div>
+                    <div class="meta">@c.OrderCount order@(c.OrderCount == 1 ? "" : "s")</div>
+                </div>
+            </a>
+        }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Result, PageUrl)" />
+}

@@ -1,0 +1,106 @@
+@model OrderIndexViewModel
+@{
+    ViewData["Title"] = "Orders";
+    var f = Model.Filter;
+    var hasExtraFilters = f.BatchId.HasValue || f.FromDate.HasValue || f.ToDate.HasValue;
+
+    string ListUrl(OrderStatus? status, int page = 1) => Url.Action("Index", new
+    {
+        status,
+        search = f.Search,
+        batchId = f.BatchId,
+        fromDate = f.FromDate?.ToString("yyyy-MM-dd"),
+        toDate = f.ToDate?.ToString("yyyy-MM-dd"),
+        page = page > 1 ? page : (int?)null
+    })!;
+
+    var tabs = new (OrderStatus? Status, string Text, int Count)[]
+    {
+        (null, "All", Model.TotalCount),
+        (OrderStatus.PreOrder, "Pre-order", Model.Count(OrderStatus.PreOrder)),
+        (OrderStatus.OutForDelivery, "Out for delivery", Model.Count(OrderStatus.OutForDelivery)),
+        (OrderStatus.Delivered, "Delivered", Model.Count(OrderStatus.Delivered)),
+        (OrderStatus.Returned, "Returned", Model.Count(OrderStatus.Returned))
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Orders</h1>
+        <div class="sub">Pre-orders, deliveries and returns</div>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-light-ghost" href="@Url.Action("Export", new { status = f.Status, search = f.Search, batchId = f.BatchId, fromDate = f.FromDate?.ToString("yyyy-MM-dd"), toDate = f.ToDate?.ToString("yyyy-MM-dd") })">
+            <i class="bi bi-download"></i><span class="d-none d-sm-inline">Export</span>
+        </a>
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> New order</a>
+    </div>
+</div>
+
+<nav class="tabs-scroll" aria-label="Order status">
+    @foreach (var t in tabs)
+    {
+        <a class="tab-pill @(f.Status == t.Status ? "active" : "")" href="@ListUrl(t.Status)">
+            @t.Text <span class="count">@t.Count</span>
+        </a>
+    }
+</nav>
+
+<form method="get" class="mb-1" role="search">
+    @if (f.Status is not null) { <input type="hidden" name="status" value="@f.Status" /> }
+    <div class="toolbar mb-2">
+        <div class="search">
+            <i class="bi bi-search"></i>
+            <input type="search" name="search" value="@f.Search" class="form-control" placeholder="Name, mobile, order no or product" aria-label="Search orders" />
+        </div>
+        <button class="btn btn-light-ghost" type="button" data-bs-toggle="collapse" data-bs-target="#orderFilters" aria-expanded="@(hasExtraFilters ? "true" : "false")" aria-controls="orderFilters">
+            <i class="bi bi-sliders"></i><span class="d-none d-sm-inline">Filters</span>
+        </button>
+        <button class="btn btn-primary" type="submit" aria-label="Search"><i class="bi bi-arrow-right"></i></button>
+    </div>
+    <div class="collapse @(hasExtraFilters ? "show" : "")" id="orderFilters">
+        <div class="filter-panel">
+            <div class="row g-2">
+                <div class="col-12 col-md-4">
+                    <label class="form-label" for="batchId">Purchase batch</label>
+                    <select class="form-select" id="batchId" name="batchId">
+                        <option value="">All batches</option>
+                        @foreach (var b in Model.Batches)
+                        {
+                            <option value="@b.Id" selected="@(b.Id == f.BatchId)">@b.BatchNo · @Fmt.Date(b.BatchDate)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="fromDate">From</label>
+                    <input type="date" class="form-control" id="fromDate" name="fromDate" value="@Fmt.InputDate(f.FromDate)" />
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="toDate">To</label>
+                    <input type="date" class="form-control" id="toDate" name="toDate" value="@Fmt.InputDate(f.ToDate)" />
+                </div>
+                <div class="col-12 col-md-2 d-flex align-items-end gap-2">
+                    <button class="btn btn-primary flex-fill" type="submit">Apply</button>
+                    <a class="btn btn-ghost" href="@Url.Action("Index", new { status = f.Status })" title="Clear filters"><i class="bi bi-x-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.Result.Items.Count == 0)
+{
+    <partial name="_EmptyState" model="@(("bi-bag", "No orders found", string.IsNullOrEmpty(f.Search) ? "Tap “New order” to add your first pre-order." : "Try a different search or clear the filters."))" />
+}
+else
+{
+    <div class="order-list">
+        @foreach (var order in Model.Result.Items)
+        {
+            <partial name="_OrderCard" model="order" />
+        }
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Result, p => ListUrl(f.Status, p))" />
+}
+
+<partial name="_OrderModals" />

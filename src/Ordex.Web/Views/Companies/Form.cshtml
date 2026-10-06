@@ -1,0 +1,89 @@
+@model CompanyInput
+@{
+    ViewData["Title"] = Model.Id == 0 ? "New company" : "Edit company";
+    ViewData["Back"] = Url.Action("Index");
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-6">
+    <div class="page-head d-none d-lg-flex"><div><h1>@ViewData["Title"]</h1></div></div>
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? null : Model.Id)" class="form-section" novalidate>
+        <div class="row g-3">
+            <div class="col-12 col-sm-4">
+                <label asp-for="CompanyCode" class="form-label"></label>
+                <input asp-for="CompanyCode" class="form-control text-uppercase" autocapitalize="characters" />
+                <span asp-validation-for="CompanyCode"></span>
+            </div>
+            <div class="col-12 col-sm-8">
+                <label asp-for="CompanyName" class="form-label"></label>
+                <input asp-for="CompanyName" class="form-control" />
+                <span asp-validation-for="CompanyName"></span>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label asp-for="Phone" class="form-label"></label>
+                <input asp-for="Phone" class="form-control" type="tel" inputmode="tel" />
+                <span asp-validation-for="Phone"></span>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" type="email" />
+                <span asp-validation-for="Email"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Address" class="form-label"></label>
+                <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="col-12"><div class="form-section-title mt-2 mb-0"><i class="bi bi-currency-exchange"></i> Currencies</div></div>
+            <div class="col-6">
+                <label asp-for="PurchaseCurrency" class="form-label"></label>
+                <select asp-for="PurchaseCurrency" class="form-select">
+                    @foreach (var c in Currencies.All)
+                    {
+                        <option value="@c.Code">@c.Code – @c.Name</option>
+                    }
+                </select>
+                <div class="form-hint">What you pay the supplier abroad in.</div>
+            </div>
+            <div class="col-6">
+                <label asp-for="SalesCurrency" class="form-label"></label>
+                <select asp-for="SalesCurrency" class="form-select">
+                    @foreach (var c in Currencies.All)
+                    {
+                        <option value="@c.Code">@c.Code – @c.Name</option>
+                    }
+                </select>
+                <div class="form-hint">What your customers pay you in.</div>
+            </div>
+            <div class="col-6">
+                <label asp-for="DefaultExchangeRate" class="form-label">Default rate (1 purchase = ? sales)</label>
+                <input asp-for="DefaultExchangeRate" class="form-control" type="number" min="0" step="0.0001" inputmode="decimal" />
+                <div class="form-hint">Used for orders that have no batch yet.</div>
+            </div>
+            <div class="col-6 d-flex align-items-end">
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="IsActive" class="form-check-input" role="switch" />
+                    <label asp-for="IsActive" class="form-check-label">Active <span class="text-muted small">(users can sign in)</span></label>
+                </div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
+        </div>
+    </form>
+    @if (Model.Id != 0)
+    {
+        <div class="danger-zone mt-3">
+            <div class="min-w-0">
+                <div class="dz-title">Delete company</div>
+                <div class="dz-text">Only possible while it has no users or records. Otherwise switch it off above.</div>
+            </div>
+            <form method="post" asp-action="Delete" asp-route-id="@Model.Id"
+                  data-confirm="Delete @Model.CompanyName permanently?" data-confirm-text="Delete" data-confirm-style="btn-danger">
+                <button type="submit" class="btn btn-red-soft"><i class="bi bi-trash3"></i> Delete</button>
+            </form>
+        </div>
+    }
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

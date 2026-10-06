@@ -1,0 +1,126 @@
+/* ==========================================================================
+   Ordex – customer order tracking page (/t/{token})
+   Stand-alone, light, phone first. Same palette as the app.
+   ========================================================================== */
+@font-face { font-family: "IBM Plex Sans"; src: url("../lib/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../lib/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../lib/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../lib/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Hind Siliguri"; src: url("../lib/fonts/hind-siliguri-bengali-400.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0980-09FF, U+200C-200D, U+25CC; }
+@font-face { font-family: "Hind Siliguri"; src: url("../lib/fonts/hind-siliguri-bengali-600.woff2") format("woff2"); font-weight: 600 700; font-display: swap; unicode-range: U+0980-09FF, U+200C-200D, U+25CC; }
+
+:root {
+  --bg: #f3f5f8; --surface: #fff; --surface-2: #f6f8fb; --border: #e2e7ee;
+  --text: #14213d; --text-2: #3d4963; --muted: #6a7590;
+  --primary: #2457c5; --primary-soft: #e8effc; --ink: #0f1f3d;
+  --accent: #e39a2d; --accent-soft: #fdf2df; --accent-ink: #84530a;
+  --green: #1b8656; --green-soft: #e2f3ea; --red: #c23a2f; --red-soft: #fbe8e5;
+  --blue: #4a4fc4; --blue-soft: #ececfb; --amber: #b06a0c; --amber-soft: #fcf0dd;
+  --radius: 16px; --shadow: 0 1px 2px rgba(20,33,61,.04), 0 8px 24px rgba(20,33,61,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1322; --surface: #121b2d; --surface-2: #172238; --border: #233049;
+    --text: #e6ebf5; --text-2: #b7c1d6; --muted: #8592ad;
+    --primary: #6f9bff; --primary-soft: #1a2a4d; --ink: #0a1427;
+    --accent-soft: #3a2a10; --accent-ink: #f3c27a;
+    --green: #4cc38a; --green-soft: #12352a; --red: #f07167; --red-soft: #3b1c1c;
+    --blue: #9ea2ff; --blue-soft: #23264a; --amber: #f0b35a; --amber-soft: #3a2a10;
+    --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", "Hind Siliguri", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.45; }
+a { color: inherit; text-decoration: none; }
+b { font-weight: 600; }
+.min-w-0 { min-width: 0; }
+.flex-1 { flex: 1; }
+
+.tk-wrap { max-width: 520px; margin: 0 auto; padding: 0 14px calc(28px + env(safe-area-inset-bottom)); }
+
+/* Header band */
+.tk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -14px; padding: calc(16px + env(safe-area-inset-top)) 18px 46px; background: var(--ink); color: #fff; }
+.tk-shop { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.tk-logo { width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,.12); display: grid; place-items: center; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+.tk-shop-name { font-weight: 600; font-size: 1.02rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-shop-sub { font-size: .78rem; color: #b8c4dc; }
+.tk-call { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,.12); color: #fff; font-size: .86rem; font-weight: 500; flex-shrink: 0; }
+.tk-call:active { background: rgba(255,255,255,.2); }
+
+.tk-hello { margin: -34px 4px 10px; color: #dfe6f3; font-size: .92rem; position: relative; }
+
+/* Cards */
+.tk-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 12px; position: relative; }
+.tk-h2 { font-size: .95rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.tk-h2 i { color: var(--primary); }
+
+/* Status */
+.tk-status h1 { font-size: 1.32rem; letter-spacing: -.01em; margin: 12px 0 4px; }
+.tk-status > p { margin: 0; color: var(--text-2); font-size: .92rem; }
+.tk-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.tk-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.tk-pill.pre { background: var(--blue-soft); color: var(--blue); }
+.tk-pill.out { background: var(--amber-soft); color: var(--amber); }
+.tk-pill.out .dot { animation: tk-pulse 1.6s ease-in-out infinite; }
+.tk-pill.done { background: var(--green-soft); color: var(--green); }
+.tk-pill.ret { background: var(--red-soft); color: var(--red); }
+.tk-pill.sm { font-size: .7rem; padding: 3px 8px; }
+@keyframes tk-pulse { 50% { opacity: .35; } }
+
+/* Progress steps */
+.tk-steps { list-style: none; margin: 18px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); position: relative; }
+.tk-steps li { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; position: relative; }
+.tk-steps li + li::before { content: ""; position: absolute; top: 17px; right: 50%; width: 100%; height: 3px; background: var(--border); z-index: 0; }
+.tk-steps li.done::before, .tk-steps li.now::before { background: var(--green); }
+.tk-step-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 2px solid var(--border); color: var(--muted); position: relative; z-index: 1; font-size: 1rem; }
+.tk-steps li.done .tk-step-icon { background: var(--green); border-color: var(--green); color: #fff; }
+.tk-steps li.now .tk-step-icon { background: var(--surface); border-color: var(--green); color: var(--green); box-shadow: 0 0 0 5px var(--green-soft); }
+.tk-step-text .t { font-size: .8rem; font-weight: 600; }
+.tk-step-text .n { font-size: .72rem; color: var(--muted); margin-top: 1px; padding: 0 4px; }
+.tk-steps li.next .tk-step-text .t { color: var(--muted); font-weight: 500; }
+
+/* Product */
+.tk-product { display: flex; align-items: center; gap: 14px; }
+.tk-thumb { width: 76px; height: 76px; border-radius: 12px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; color: var(--muted); font-size: 1.6rem; flex-shrink: 0; }
+.tk-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.tk-thumb.sm { width: 46px; height: 46px; border-radius: 10px; font-size: 1.1rem; }
+.tk-product-name { font-weight: 600; font-size: 1.02rem; margin-bottom: 3px; overflow-wrap: anywhere; }
+.tk-meta { display: block; font-size: .82rem; color: var(--muted); }
+.tk-meta b { color: var(--text-2); font-weight: 600; }
+
+/* Payment */
+.tk-rows .r { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: .92rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tk-rows .r + .r { border-top: 1px dashed var(--border); }
+.tk-rows .r b { color: var(--text); }
+.tk-rows .r b.ok { color: var(--green); }
+.tk-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 12px 14px; border-radius: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tk-total b { font-size: 1.2rem; }
+.tk-total.due { background: var(--accent-soft); color: var(--accent-ink); }
+.tk-total.paid { background: var(--green-soft); color: var(--green); }
+
+/* Other orders */
+.tk-others { display: flex; flex-direction: column; }
+.tk-other { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.tk-other + .tk-other { border-top: 1px solid var(--border); }
+.tk-other-name { display: block; font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Help + footer */
+.tk-help { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 18px; border-radius: var(--radius); background: var(--primary-soft); margin-bottom: 12px; }
+.tk-help .t { font-weight: 600; font-size: .92rem; }
+.tk-help .n { font-size: .8rem; color: var(--text-2); }
+.tk-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 600; font-size: .9rem; }
+.tk-foot { text-align: center; font-size: .76rem; color: var(--muted); padding: 10px 0 0; line-height: 1.7; }
+
+/* Not found */
+.tk-empty { text-align: center; margin-top: 18vh; padding: 32px 22px; }
+.tk-empty h1 { font-size: 1.2rem; margin: 14px 0 6px; }
+.tk-empty p { color: var(--text-2); margin: 0; font-size: .92rem; }
+.tk-empty-icon { width: 60px; height: 60px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); font-size: 1.8rem; }
+
+@media (min-width: 560px) {
+  .tk-wrap { padding-top: 24px; }
+  .tk-head { margin: 0 0 0; border-radius: var(--radius) var(--radius) 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .tk-pill.out .dot { animation: none; } }

@@ -1,0 +1,49 @@
+@model BatchInput
+@{
+    ViewData["Title"] = Model.IsNew ? "New batch" : "Edit batch";
+    ViewData["Back"] = Model.IsNew ? Url.Action("Index") : Url.Action("Details", new { id = Model.Id });
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-5">
+    <div class="page-head d-none d-lg-flex"><div><h1>@ViewData["Title"]</h1><div class="sub">One batch = one buying trip at one exchange rate.</div></div></div>
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="@(Model.IsNew ? "Create" : "Edit")" asp-route-id="@(Model.IsNew ? null : Model.Id)" novalidate>
+        @if (Model.IsNew)
+        {
+            @await Component.InvokeAsync("ScopeFields", new { companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+        }
+        <section class="form-section">
+            <div class="mb-3">
+                <label asp-for="BatchNo" class="form-label"></label>
+                <input asp-for="BatchNo" class="form-control" placeholder="Leave empty to auto-number" />
+                <span asp-validation-for="BatchNo"></span>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <label asp-for="BatchDate" class="form-label"></label>
+                    <input asp-for="BatchDate" class="form-control" type="date" value="@Fmt.InputDate(Model.BatchDate)" />
+                    <span asp-validation-for="BatchDate"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="ExchangeRate" class="form-label">Rate (@Money.RateLabel)</label>
+                    <input asp-for="ExchangeRate" class="form-control" type="number" min="0" step="0.0001" inputmode="decimal" />
+                    <span asp-validation-for="ExchangeRate"></span>
+                </div>
+            </div>
+            <div>
+                <label asp-for="Notes" class="form-label"></label>
+                <textarea asp-for="Notes" class="form-control" rows="2" placeholder="e.g. Singapore trip, carried by …"></textarea>
+            </div>
+            @if (!Model.IsNew)
+            {
+                <div class="alert alert-warning small mt-3 mb-0"><i class="bi bi-info-circle"></i> Changing the rate updates the payable amount. Existing order costs are not changed automatically.</div>
+            }
+        </section>
+        <div class="form-actions">
+            <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save batch</button>
+        </div>
+    </form>
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

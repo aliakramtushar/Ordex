@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Ordex.Web</RootNamespace>
+    <UserSecretsId>ordex-web-7c1f0a52</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ordex.Core\Ordex.Core.csproj" />
+    <ProjectReference Include="..\Ordex.Infrastructure\Ordex.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Ship the SQL scripts with the app so the database can be created/updated on startup -->
+  <ItemGroup>
+    <None Include="..\..\database\*.sql" LinkBase="database" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Uploaded images are user data – never publish/overwrite them -->
+  <ItemGroup>
+    <Content Remove="wwwroot\uploads\**" />
+  </ItemGroup>
+
+  <!-- Settings template for Git – not needed on the server -->
+  <ItemGroup>
+    <Content Update="appsettings.example.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+</Project>

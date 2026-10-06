@@ -1,0 +1,275 @@
+@model NewOrdersInput
+@inject Ordex.Core.Abstractions.Services.ILookupService Lookups
+@{
+    ViewData["Title"] = "New order";
+    ViewData["Back"] = Url.Action("Index");
+    var defaultRate = await Lookups.DefaultExchangeRateAsync(Model.CompanyId);
+    if (Model.Items.Count == 0) Model.Items.Add(new OrderItemInput());
+
+    // Customer panel starts open when a customer is already chosen (from a customer page, or a form re-shown after an error).
+    var hasCustomer = !string.IsNullOrWhiteSpace(Model.Mobile) || Model.CustomerId is > 0;
+    var isExisting = Model.CustomerId is > 0;
+    var buyPrefix = Money.BuySymbol == "" ? Money.BuyCode : Money.BuySymbol;
+    var salePrefix = Money.SaleSymbol == "" ? Money.SaleCode : Money.SaleSymbol;
+}
+
+<div class="row justify-content-center">
+<div class="col-12 col-xl-10 col-xxl-9">
+
+<div class="page-head d-none d-lg-flex">
+    <div>
+        <h1>New order</h1>
+        <div class="sub">Find the customer, then add one or more products. Each product gets its own order number.</div>
+    </div>
+</div>
+
+<partial name="_FormErrors" />
+
+<form method="post" enctype="multipart/form-data" novalidate asp-action="Create" class="order-create"
+      data-order-create
+      data-default-rate="@Fmt.Rate(defaultRate)" data-sale-symbol="@Money.SaleSymbol" data-sale-code="@Money.SaleCode"
+      data-buy-code="@Money.BuyCode" data-sale-decimals="@Money.Sales.Decimals" data-max-items="@NewOrdersInput.MaxItems">
+
+    <div class="row g-3">
+    <div class="col-12 col-lg-5">
+
+        @await Component.InvokeAsync("ScopeFields", new { companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+
+        <!-- ───────────── 1. Customer ───────────── -->
+        <section class="form-section" data-customer-section>
+            <div class="form-section-title"><span class="step-no">1</span> Customer</div>
+
+            <input type="hidden" asp-for="CustomerId" data-customer-id />
+
+            <!-- Search (hidden once a customer is picked) -->
+            <div class="cust-search" data-cust-search @(hasCustomer ? "hidden" : null)>
+                <div class="search-field">
+                    <i class="bi bi-search"></i>
+                    <input type="search" class="form-control" placeholder="Mobile number or name" autocomplete="off"
+                           enterkeyhint="search" aria-label="Search customer by mobile or name" data-cust-term />
+                    <span class="spinner-border spinner-border-sm text-muted" data-cust-busy hidden aria-hidden="true"></span>
+                </div>
+                <div class="cust-results" data-cust-results role="listbox" aria-label="Matching customers"></div>
+                <button type="button" class="btn btn-new-cust w-100" data-cust-new>
+                    <i class="bi bi-person-plus"></i> <span data-cust-new-label>New customer</span>
+                </button>
+                <div class="form-hint text-center mt-2">Type at least 2 letters or digits. Returning customers show their order count.</div>
+            </div>
+
+            <!-- Chosen customer -->
+            <div class="cust-picked" data-cust-picked @(hasCustomer ? null : "hidden")>
+                <div class="cust-card">
+                    <span class="avatar lg" data-cust-initials>@Fmt.Initials(Model.CustomerName)</span>
+                    <div class="min-w-0 flex-grow-1">
+                        <div class="fw-600 text-truncate" data-cust-show-name>@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "New customer" : Model.CustomerName)</div>
+                        <div class="small text-muted text-truncate" data-cust-show-mobile>@Model.Mobile</div>
+                        <span class="cust-tag @(isExisting ? "returning" : "new")" data-cust-tag>@(isExisting ? "Returning customer" : "New customer")</span>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" data-cust-change><i class="bi bi-arrow-left-right"></i> Change</button>
+                </div>
+
+                <div class="cust-fields">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="DeliveryAddress" class="form-label"></label>
+                            <textarea asp-for="DeliveryAddress" class="form-control" rows="2" placeholder="House, road, area, city"></textarea>
+                            <span asp-validation-for="DeliveryAddress"></span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-link-sm mt-2" data-cust-more-toggle @(isExisting ? null : "hidden")>
+                        <i class="bi bi-pencil"></i> Edit name / social link
+                    </button>
+
+                    <div class="row g-3 mt-0" data-cust-more @(isExisting ? "hidden" : null)>
+                        <div class="col-12 col-sm-6">
+                            <label asp-for="Mobile" class="form-label"></label>
+                            <input asp-for="Mobile" class="form-control" type="tel" inputmode="tel" autocomplete="off" placeholder="01XXXXXXXXX" readonly="@isExisting" />
+                            <span asp-validation-for="Mobile"></span>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label asp-for="CustomerName" class="form-label"></label>
+                            <input asp-for="CustomerName" class="form-control" autocomplete="off" autocapitalize="words" />
+                            <span asp-validation-for="CustomerName"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="SocialLink" class="form-label"></label>
+                            <input asp-for="SocialLink" class="form-control" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="facebook.com/… (optional)" />
+                            <span asp-validation-for="SocialLink"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────────── 2. Order ───────────── -->
+        <section class="form-section">
+            <div class="form-section-title"><span class="step-no">2</span> Order</div>
+            <div class="row g-3">
+                <div class="col-12 col-sm-6 col-lg-12">
+                    <label asp-for="OrderDate" class="form-label"></label>
+                    <input asp-for="OrderDate" class="form-control" type="date" value="@Fmt.InputDate(Model.OrderDate)" />
+                    <span asp-validation-for="OrderDate"></span>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-12">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <label asp-for="BatchId" class="form-label"></label>
+                        <button type="button" class="btn-link-sm" data-bs-toggle="modal" data-bs-target="#quickBatchModal"><i class="bi bi-plus-circle"></i> New batch</button>
+                    </div>
+                    @await Component.InvokeAsync("BatchSelect", new { selected = Model.BatchId, companyId = Model.CompanyId, businessUnitId = Model.BusinessUnitId })
+                    <div class="form-hint"><i class="bi bi-info-circle"></i> <span data-rate-label></span></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <!-- ───────────── 3. Products ───────────── -->
+        <section class="form-section products-section">
+            <div class="form-section-title">
+                <span class="step-no">3</span> Products
+                <span class="badge-soft ms-auto" data-item-count>@Model.Items.Count</span>
+            </div>
+
+            <div class="item-list" data-items>
+                @for (var i = 0; i < Model.Items.Count; i++)
+                {
+                    <div class="item-card" data-item>
+                        <div class="item-head">
+                            <span class="item-no">Product <b data-item-no>@(i + 1)</b></span>
+                            <span class="item-head-calc" data-item-summary></span>
+                            <button type="button" class="btn btn-ghost btn-icon btn-sm" data-item-copy title="Copy this product" aria-label="Copy this product"><i class="bi bi-copy"></i></button>
+                            <button type="button" class="btn btn-ghost btn-icon btn-sm text-danger" data-item-remove title="Remove" aria-label="Remove this product"><i class="bi bi-trash3"></i></button>
+                        </div>
+
+                        <div class="item-body">
+                            <div class="item-top">
+                                <label class="item-photo" title="Add a picture">
+                                    <span class="preview"><i class="bi bi-camera"></i></span>
+                                    <input type="file" name="Items[@i].Image" accept="image/jpeg,image/png,image/webp,image/*" data-image-input class="visually-hidden" />
+                                </label>
+                                <div class="flex-grow-1 min-w-0">
+                                    <label asp-for="Items[i].ProductName" class="form-label"></label>
+                                    <input asp-for="Items[i].ProductName" class="form-control" autocomplete="off" placeholder="e.g. Nike Air Max" data-f="name" />
+                                    <span asp-validation-for="Items[i].ProductName"></span>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mt-1">
+                                <div class="col-5">
+                                    <label asp-for="Items[i].ProductSize" class="form-label"></label>
+                                    <input asp-for="Items[i].ProductSize" class="form-control" placeholder="M / 32 / 6Y" />
+                                </div>
+                                <div class="col-7">
+                                    <label asp-for="Items[i].ProductLink" class="form-label"></label>
+                                    <input asp-for="Items[i].ProductLink" class="form-control" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="Shop link" />
+                                    <span asp-validation-for="Items[i].ProductLink"></span>
+                                </div>
+
+                                <div class="col-6">
+                                    <label asp-for="Items[i].PurchasePriceSgd" class="form-label"></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">@buyPrefix</span>
+                                        <input asp-for="Items[i].PurchasePriceSgd" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" data-f="buy" />
+                                    </div>
+                                    <span asp-validation-for="Items[i].PurchasePriceSgd"></span>
+                                </div>
+                                <div class="col-6">
+                                    <label asp-for="Items[i].ProductPriceBdt" class="form-label"></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">@salePrefix</span>
+                                        <input asp-for="Items[i].ProductPriceBdt" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" data-f="cost" />
+                                    </div>
+                                    <span asp-validation-for="Items[i].ProductPriceBdt"></span>
+                                </div>
+                                <div class="col-6">
+                                    <label asp-for="Items[i].SellingPrice" class="form-label"></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">@salePrefix</span>
+                                        <input asp-for="Items[i].SellingPrice" class="form-control" type="number" min="0" step="any" inputmode="decimal" data-f="sell" />
+                                    </div>
+                                    <span asp-validation-for="Items[i].SellingPrice"></span>
+                                </div>
+                                <div class="col-6">
+                                    <label asp-for="Items[i].AdvanceAmount" class="form-label"></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">@salePrefix</span>
+                                        <input asp-for="Items[i].AdvanceAmount" class="form-control" type="number" min="0" step="any" inputmode="decimal" data-f="adv" />
+                                    </div>
+                                    <span asp-validation-for="Items[i].AdvanceAmount"></span>
+                                </div>
+                                <div class="col-12">
+                                    <input asp-for="Items[i].Notes" class="form-control form-control-sm" placeholder="Note (optional)" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <button type="button" class="btn btn-add-item w-100" data-item-add>
+                <i class="bi bi-plus-lg"></i> Add another product
+            </button>
+            <div class="form-hint text-center mt-2">Same customer buying more? Add each product here – they are saved together.</div>
+        </section>
+    </div>
+    </div>
+
+    <!-- ───────────── Sticky total + save ───────────── -->
+    <div class="form-actions order-actions">
+        <div class="order-total" aria-live="polite">
+            <div><span class="lbl">Total</span><b data-total-sell>@Money.Sale(0)</b></div>
+            <div><span class="lbl">Due</span><b data-total-due>@Money.Sale(0)</b></div>
+            <div class="d-none d-md-flex"><span class="lbl">Profit</span><b data-total-profit>@Money.Sale(0)</b></div>
+        </div>
+        <div class="order-buttons">
+            <button type="submit" name="next" value="same" class="btn btn-soft d-none d-md-inline-flex" title="Save, then start another order for this customer">
+                <i class="bi bi-arrow-repeat"></i> Save &amp; new for this customer
+            </button>
+            <button type="submit" class="btn btn-primary" data-busy-text="Saving…">
+                <i class="bi bi-check2"></i> <span data-save-label>Save order</span>
+            </button>
+        </div>
+    </div>
+</form>
+
+</div>
+</div>
+
+<!-- Quick "new purchase batch" sheet -->
+<div class="modal fade modal-sheet" id="quickBatchModal" tabindex="-1" aria-labelledby="quickBatchTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" data-quick-batch novalidate>
+            <div class="modal-header">
+                <h2 class="modal-title" id="quickBatchTitle"><i class="bi bi-airplane"></i> New purchase batch</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="qbDate">Purchase date</label>
+                        <input class="form-control" type="date" id="qbDate" name="BatchDate" value="@Fmt.InputDate(Model.OrderDate)" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="qbRate">Rate (@Money.RateLabel)</label>
+                        <input class="form-control" type="number" id="qbRate" name="ExchangeRate" min="0" step="0.0001" inputmode="decimal" value="@(defaultRate > 0 ? Fmt.Rate(defaultRate) : "")" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="qbNo">Batch no <span class="text-muted fw-normal">(optional)</span></label>
+                        <input class="form-control" id="qbNo" name="BatchNo" maxlength="30" placeholder="Leave empty to number it automatically" />
+                    </div>
+                </div>
+                <div class="alert alert-danger small py-2 mt-3 mb-0" data-quick-batch-error hidden></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Create &amp; use</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/order-create.js" asp-append-version="true"></script>
+}

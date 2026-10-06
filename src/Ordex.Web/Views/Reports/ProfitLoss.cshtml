@@ -1,0 +1,112 @@
+@model ProfitLossViewModel
+@{
+    ViewData["Title"] = "Profit & loss";
+    var s = Model.Report.Summary;
+    var maxExpense = Model.Report.ExpenseByCategory.Count == 0 ? 1 : Model.Report.ExpenseByCategory.Max(e => e.Amount);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Profit &amp; loss</h1>
+        <div class="sub">@Fmt.Date(Model.Range.From) – @Fmt.Date(Model.Range.To)</div>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-light-ghost" data-print><i class="bi bi-printer"></i><span class="d-none d-sm-inline">Print</span></button>
+    </div>
+</div>
+
+<form method="get" class="range-form mb-2 no-print">
+    <input type="date" name="from" id="from" value="@Fmt.InputDate(Model.Range.From)" class="form-control" aria-label="From date" />
+    <input type="date" name="to" id="to" value="@Fmt.InputDate(Model.Range.To)" class="form-control" aria-label="To date" />
+    <button class="btn btn-primary" type="submit" aria-label="Apply"><i class="bi bi-funnel"></i><span class="d-none d-sm-inline">Apply</span></button>
+</form>
+<div class="tabs-scroll no-print">
+    <a href="#" class="tab-pill" data-range="month" data-from="#from" data-to="#to">This month</a>
+    <a href="#" class="tab-pill" data-range="last-month" data-from="#from" data-to="#to">Last month</a>
+    <a href="#" class="tab-pill" data-range="year" data-from="#from" data-to="#to">This year</a>
+</div>
+
+<div class="kpi-grid mb-3">
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-cash-stack"></i> Collection</div><div class="kpi-value">@Money.Sale(s.TotalCollection)</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-airplane"></i> Purchase</div><div class="kpi-value">@Money.Sale(s.TotalPurchaseBdt)</div><div class="kpi-sub num">@Money.Buy(s.TotalPurchaseSgd)</div></div>
+    <div class="kpi"><div class="kpi-label"><i class="bi bi-wallet2"></i> Expenses</div><div class="kpi-value">@Money.Sale(s.Expenses)</div></div>
+    <div class="kpi accent"><div class="kpi-label"><i class="bi bi-graph-up-arrow"></i> Net profit</div><div class="kpi-value">@Money.Sale(s.NetProfit)</div><div class="kpi-sub">Cash method</div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-6">
+        <div class="card-x mb-3">
+            <div class="card-x-header"><h2 class="card-x-title">Cash calculation</h2><span class="small text-muted">same as on paper</span></div>
+            <div class="card-x-body money-rows">
+                <div class="mr"><span>Advance received <span class="text-muted small">(@s.OrderCount orders)</span></span><span class="v">@Money.Sale(s.AdvanceCollected)</span></div>
+                <div class="mr"><span>Collected on delivery <span class="text-muted small">(@s.DeliveredCount delivered)</span></span><span class="v">@Money.Sale(s.DueCollected)</span></div>
+                <div class="mr"><span>Stock sales <span class="text-muted small">(@s.StockSoldCount items)</span></span><span class="v">@Money.Sale(s.StockSales)</span></div>
+                <div class="mr"><span>Refunds on returns <span class="text-muted small">(@s.ReturnedCount returned)</span></span><span class="v neg">− @Money.Sale(s.Refunds)</span></div>
+                <div class="mr total"><span>Total collection</span><span class="v">@Money.Sale(s.TotalCollection)</span></div>
+                <div class="mr"><span>Order purchase <span class="text-muted small num">@Money.Buy(s.OrderPurchaseSgd)</span></span><span class="v neg">− @Money.Sale(s.OrderPurchaseBdt)</span></div>
+                <div class="mr"><span>Extra items purchase <span class="text-muted small num">@Money.Buy(s.ExtraPurchaseSgd)</span></span><span class="v neg">− @Money.Sale(s.ExtraPurchaseBdt)</span></div>
+                <div class="mr"><span>Expenses</span><span class="v neg">− @Money.Sale(s.Expenses)</span></div>
+                <div class="mr total"><span>Net profit / loss</span><span class="v @(s.NetProfit < 0 ? "neg" : "pos")">@Money.Sale(s.NetProfit)</span></div>
+            </div>
+        </div>
+
+        <div class="card-x">
+            <div class="card-x-header"><h2 class="card-x-title">Earned profit</h2><span class="small text-muted">delivered &amp; sold only</span></div>
+            <div class="card-x-body money-rows">
+                <div class="mr"><span>Delivered sales</span><span class="v">@Money.Sale(s.DeliveredSales)</span></div>
+                <div class="mr"><span>Margin on delivered orders <span class="text-muted small">(received − cost)</span></span><span class="v">@Money.Sale(s.DeliveredMargin)</span></div>
+                <div class="mr"><span>Kept from returns <span class="text-muted small">(received − refunded)</span></span><span class="v">@Money.Sale(s.ReturnRetained)</span></div>
+                <div class="mr"><span>Margin on stock sales</span><span class="v">@Money.Sale(s.StockSalesMargin)</span></div>
+                <div class="mr"><span>Expenses</span><span class="v neg">− @Money.Sale(s.Expenses)</span></div>
+                <div class="mr total"><span>Earned profit</span><span class="v @(s.EarnedProfit < 0 ? "neg" : "pos")">@Money.Sale(s.EarnedProfit)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card-x mb-3">
+            <div class="card-x-header"><h2 class="card-x-title">Expenses by category</h2></div>
+            <div class="card-x-body">
+                @if (Model.Report.ExpenseByCategory.Count == 0)
+                {
+                    <div class="text-muted small">No expenses in this period.</div>
+                }
+                @foreach (var e in Model.Report.ExpenseByCategory)
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1"><span>@e.CategoryName <span class="text-muted">(@e.EntryCount)</span></span><b class="num">@Money.Sale(e.Amount)</b></div>
+                        <div class="bar-track"><div class="bar-fill" style="width:@((int)Math.Round(e.Amount / maxExpense * 100))%"></div></div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card-x">
+            <div class="card-x-header"><h2 class="card-x-title">Purchase batches</h2><a class="small" asp-action="Payable">@Money.BuyCode payable <i class="bi bi-chevron-right"></i></a></div>
+            @if (Model.Report.Batches.Count == 0)
+            {
+                <div class="card-x-body text-muted small">No batches in this period.</div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-x">
+                        <thead><tr><th>Batch</th><th class="r">@Money.BuyCode</th><th class="r">@Money.SaleCode</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var b in Model.Report.Batches)
+                            {
+                                <tr>
+                                    <td><a asp-controller="Batches" asp-action="Details" asp-route-id="@b.BatchId">@b.BatchNo</a><div class="text-muted small">@Fmt.Date(b.BatchDate) · @Fmt.Rate(b.ExchangeRate)</div></td>
+                                    <td class="r">@Money.Buy(b.TotalSgd)</td>
+                                    <td class="r">@Money.Sale(b.PayableBdt)</td>
+                                    <td>@if (b.IsPaid) { <span class="badge-soft green">Paid</span> } else { <span class="badge-soft amber">Unpaid</span> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot><tr><td>Total</td><td class="r">@Money.Buy(Model.Report.Batches.Sum(b => b.TotalSgd))</td><td class="r">@Money.Sale(Model.Report.Batches.Sum(b => b.PayableBdt))</td><td></td></tr></tfoot>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

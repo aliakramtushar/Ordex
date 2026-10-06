@@ -1,0 +1,8 @@
+@* Errors that don't belong to one field (e.g. business rule failures from a service). *@
+@if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+{
+    <div class="alert alert-danger d-flex gap-2 align-items-start" role="alert">
+        <i class="bi bi-exclamation-circle mt-1"></i>
+        <div asp-validation-summary="ModelOnly" class="mb-0"></div>
+    </div>
+}

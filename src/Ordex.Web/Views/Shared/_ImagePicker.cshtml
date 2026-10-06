@@ -1,0 +1,26 @@
+@model (string? CurrentImage, string Label)
+@* Reusable image field: camera/gallery on phones, preview, compression (site.js), remove option. *@
+<label class="form-label">@Model.Label</label>
+<div class="image-picker">
+    <div class="preview" id="imgPreview">
+        @if (!string.IsNullOrEmpty(Model.CurrentImage))
+        {
+            <img src="@Model.CurrentImage" alt="Current image" />
+        }
+        else
+        {
+            <i class="bi bi-image"></i>
+        }
+    </div>
+    <div class="min-w-0 flex-grow-1">
+        <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/*" class="form-control" data-image-input data-preview="#imgPreview" />
+        <div class="form-hint">JPG, PNG or WEBP. Large photos are shrunk on your phone before upload.</div>
+        @if (!string.IsNullOrEmpty(Model.CurrentImage))
+        {
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="RemoveImage" value="true" id="RemoveImage" />
+                <label class="form-check-label small" for="RemoveImage">Remove current image</label>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,161 @@
+@inject Ordex.Core.Abstractions.Services.ILookupService Lookups
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var title = ViewData["Title"] as string ?? "Ordex";
+    var backUrl = ViewData["Back"] as string;
+    var canSwitchScope = CurrentUser.CompanyId == 0 || CurrentUser.BusinessUnitId == 0;
+    var scopeText = await ScopeLabel.TextAsync(CurrentUser, Lookups, User);
+
+    string Active(string c, string? a = null) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase) &&
+        (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase)) ? "active" : string.Empty;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1f3d" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@title · Ordex</title>
+    <link rel="icon" href="~/img/favicon.svg" type="image/svg+xml" />
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+<div class="app">
+
+    <!-- ───────────── Sidebar (desktop) ───────────── -->
+    <aside class="sidebar" aria-label="Main navigation">
+        <a class="brand" asp-controller="Dashboard" asp-action="Index">
+            <img src="~/img/favicon.svg" width="32" height="32" alt="" />
+            <span>Ordex<small>Cross-border orders</small></span>
+        </a>
+        <nav class="side-nav">
+            <partial name="_NavLinks" model="@("side")" />
+        </nav>
+        <div class="side-foot">
+            <div class="d-flex align-items-center gap-2">
+                <span class="avatar">@Fmt.Initials(CurrentUser.FullName)</span>
+                <div class="min-w-0 flex-grow-1">
+                    <div class="who fw-600 text-truncate small">@CurrentUser.FullName</div>
+                    <div class="role text-truncate">@CurrentUser.Role.ToText()</div>
+                </div>
+                <button type="button" class="btn btn-ghost btn-icon btn-sm" data-theme-toggle title="Switch light / dark" aria-label="Switch light or dark theme"><i class="bi bi-circle-half"></i></button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="app-body">
+        <!-- ───────────── Top bar ───────────── -->
+        <header class="topbar">
+            @if (!string.IsNullOrEmpty(backUrl))
+            {
+                <a href="@backUrl" class="btn btn-ghost btn-icon d-lg-none" aria-label="Back"><i class="bi bi-arrow-left"></i></a>
+            }
+            else
+            {
+                <a class="d-lg-none" asp-controller="Dashboard" asp-action="Index" aria-label="Dashboard"><img src="~/img/favicon.svg" width="32" height="32" alt="Ordex" /></a>
+            }
+
+            <div class="topbar-heading">
+                <h1 class="topbar-title">@title</h1>
+                <button type="button" class="scope-mini d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#scopeSheet" aria-controls="scopeSheet" aria-label="Change company or business unit">
+                    <i class="bi bi-buildings"></i><span>@scopeText</span>@if (canSwitchScope) {<i class="bi bi-chevron-down"></i>}
+                </button>
+            </div>
+
+            <span class="topbar-divider d-none d-lg-block"></span>
+            @await Component.InvokeAsync("ScopeSwitcher", new { variant = "desktop" })
+
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <a asp-controller="Orders" asp-action="Create" class="btn btn-primary btn-sm d-none @(controller == "Orders" ? "" : "d-lg-inline-flex")"><i class="bi bi-plus-lg"></i> New order</a>
+                <button type="button" class="btn btn-ghost btn-icon d-lg-none" data-theme-toggle aria-label="Switch light or dark theme"><i class="bi bi-circle-half"></i></button>
+                <div class="dropdown">
+                    <button class="user-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                        <span class="avatar">@Fmt.Initials(CurrentUser.FullName)</span>
+                        <span class="d-none d-xl-block">
+                            <span class="u-name d-block">@CurrentUser.FullName</span>
+                            <span class="u-role d-block">@CurrentUser.Role.ToText()</span>
+                        </span>
+                        <i class="bi bi-chevron-down d-none d-xl-inline text-muted small"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <div class="px-2 py-1 mb-1">
+                            <div class="fw-600">@CurrentUser.FullName</div>
+                            <div class="text-muted small">@CurrentUser.UserName · @CurrentUser.Role.ToText()</div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key"></i> Change password</a>
+                        <button type="button" class="dropdown-item" data-theme-toggle><i class="bi bi-circle-half"></i> Light / dark theme</button>
+                        <form method="post" asp-controller="Account" asp-action="Logout">
+                            <button type="submit" class="dropdown-item text-danger" data-busy-text="Signing out…"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main" id="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- ───────────── Bottom nav (mobile) ───────────── -->
+    <nav class="bottom-nav" aria-label="Quick navigation">
+        <a class="bn-item @Active("Dashboard")" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-grid-1x2"></i>Home</a>
+        <a class="bn-item @(Active("Orders") is "active" && action != "Create" ? "active" : "")" asp-controller="Orders" asp-action="Index"><i class="bi bi-bag"></i>Orders</a>
+        <a class="bn-fab" asp-controller="Orders" asp-action="Create" aria-label="New order"><i class="bi bi-plus-lg"></i></a>
+        <a class="bn-item @Active("Stock")" asp-controller="Stock" asp-action="Index"><i class="bi bi-box-seam"></i>Stock</a>
+        <button class="bn-item" type="button" data-bs-toggle="offcanvas" data-bs-target="#moreSheet" aria-controls="moreSheet"><i class="bi bi-list"></i>More</button>
+    </nav>
+
+    <div class="offcanvas offcanvas-bottom" tabindex="-1" id="moreSheet" aria-labelledby="moreSheetLabel">
+        <div class="offcanvas-header pb-2">
+            <h5 class="offcanvas-title" id="moreSheetLabel">Menu</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body pt-0">
+            <partial name="_NavLinks" model="@("sheet")" />
+        </div>
+    </div>
+
+    <!-- Company / business unit picker (mobile) -->
+    <div class="offcanvas offcanvas-bottom" tabindex="-1" id="scopeSheet" aria-labelledby="scopeSheetLabel">
+        <div class="offcanvas-header pb-2">
+            <h5 class="offcanvas-title" id="scopeSheetLabel">@(canSwitchScope ? "Show data for" : "You are working in")</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body pt-1 pb-4">
+            @await Component.InvokeAsync("ScopeSwitcher", new { variant = "sheet" })
+        </div>
+    </div>
+</div>
+
+<!-- Shared confirm dialog (used by data-confirm) -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body p-4">
+                <h2 class="modal-title mb-2" id="confirmTitle">Are you sure?</h2>
+                <p class="text-2 mb-0" id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmOk">Yes, continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_Toasts" />
+
+<script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

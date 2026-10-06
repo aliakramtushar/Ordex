@@ -1,0 +1,44 @@
+# ───────── Secrets & local settings (never commit) ─────────
+# Copy src/Ordex.Web/appsettings.example.json → appsettings.json and fill in your values.
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+*.env
+.env*
+secrets.json
+
+# ───────── Runtime data ─────────
+**/wwwroot/uploads/
+**/App_Data/
+*.log
+logs/
+
+# ───────── Build output ─────────
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+publish/
+artifacts/
+*.nupkg
+
+# ───────── Visual Studio / Rider / VS Code ─────────
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+*.userprefs
+*.rsuser
+*.pubxml.user
+*.DotSettings.user
+TestResults/
+
+# ───────── OS / misc ─────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.tgz
+*.zip
+_to_delete/

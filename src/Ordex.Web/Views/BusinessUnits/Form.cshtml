@@ -1,0 +1,82 @@
+@model BusinessUnitInput
+@inject Ordex.Core.Abstractions.Services.ILookupService Lookups
+@{
+    var isSuper = CurrentUser.IsSuperAdmin;
+    ViewData["Title"] = Model.Id == 0 ? "New business unit" : "Edit business unit";
+    ViewData["Back"] = Url.Action("Index");
+    IReadOnlyList<LookupItem> companies = isSuper ? await Lookups.CompaniesAsync() : Array.Empty<LookupItem>();
+    var companyName = companies.FirstOrDefault(c => c.Id == Model.CompanyId)?.Text;
+}
+<div class="row justify-content-center">
+<div class="col-12 col-md-8 col-xl-5">
+    <div class="page-head d-none d-lg-flex"><div><h1>@ViewData["Title"]</h1></div></div>
+    <partial name="_FormErrors" />
+    <form method="post" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" asp-route-id="@(Model.Id == 0 ? null : Model.Id)" class="form-section" novalidate>
+        @if (isSuper && Model.Id == 0)
+        {
+            <div class="mb-3">
+                <label asp-for="CompanyId" class="form-label"></label>
+                <select asp-for="CompanyId" class="form-select">
+                    <option value="">Select company</option>
+                    @foreach (var c in companies) { <option value="@c.Id">@c.Text</option> }
+                </select>
+                <span asp-validation-for="CompanyId"></span>
+            </div>
+        }
+        else
+        {
+            @* The company of an existing unit never changes – the server ignores this value. *@
+            <input type="hidden" asp-for="CompanyId" />
+            @if (isSuper && companyName is not null)
+            {
+                <div class="mb-3">
+                    <span class="form-label d-block">Company</span>
+                    <div class="readonly-field"><i class="bi bi-building text-muted"></i>@companyName</div>
+                </div>
+            }
+        }
+        <div class="row g-3">
+            <div class="col-12 col-sm-4">
+                <label asp-for="UnitCode" class="form-label"></label>
+                <input asp-for="UnitCode" class="form-control text-uppercase" autocapitalize="characters" />
+                <span asp-validation-for="UnitCode"></span>
+            </div>
+            <div class="col-12 col-sm-8">
+                <label asp-for="UnitName" class="form-label"></label>
+                <input asp-for="UnitName" class="form-control" />
+                <span asp-validation-for="UnitName"></span>
+            </div>
+        </div>
+        @if (isSuper)
+        {
+            <div class="form-check form-switch mt-3">
+                <input asp-for="IsActive" class="form-check-input" role="switch" />
+                <label asp-for="IsActive" class="form-check-label">Active <span class="text-muted small">(staff can sign in)</span></label>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="IsActive" />
+            <div class="mt-3"><span class="status-dot @(Model.IsActive ? "on" : "off")">@(Model.IsActive ? "Active" : "Inactive")</span></div>
+        }
+        <div class="form-actions">
+            <a class="btn btn-light-ghost" href="@ViewData["Back"]">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
+        </div>
+    </form>
+    @if (isSuper && Model.Id != 0)
+    {
+        <div class="danger-zone mt-3">
+            <div class="min-w-0">
+                <div class="dz-title">Delete business unit</div>
+                <div class="dz-text">Only possible while it has no users or records. Otherwise switch it off above.</div>
+            </div>
+            <form method="post" asp-action="Delete" asp-route-id="@Model.Id"
+                  data-confirm="Delete @Model.UnitName permanently?" data-confirm-text="Delete" data-confirm-style="btn-danger">
+                <button type="submit" class="btn btn-red-soft"><i class="bi bi-trash3"></i> Delete</button>
+            </form>
+        </div>
+    }
+</div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
